@@ -6,7 +6,7 @@ No fork, no new opcode, no private miner involvement: Bitcoin Core default relay
 
 It's making a quantum attacker work harder. 
 
-**It is not quantum-safe.**, it is a work factor, the cheapest speed bump available until Bitcoin can verify post-quantum signatures. That takes more than BIP-360: its Pay-to-Merkle-Root outputs remove Taproot's exposed key-path spend, but a script-path spend still signs with ECDSA or Schnorr and reveals its keys in flight, so a separate post-quantum signature mechanism, such as the hash-based BIP-SHRINCS draft, is needed as well.
+**It is not quantum-safe.** It is a work factor, the cheapest speed bump available until Bitcoin can verify post-quantum signatures. That takes more than BIP-360: its Pay-to-Merkle-Root outputs remove Taproot's exposed key-path spend, but a script-path spend still signs with ECDSA or Schnorr and reveals its keys in flight, so a separate post-quantum signature mechanism, such as the hash-based BIP-SHRINCS draft, is needed as well.
 
 > Status: experimental, unaudited. Use small amounts.
 

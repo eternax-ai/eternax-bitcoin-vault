@@ -24,4 +24,4 @@ This is experimental, unaudited software. Use small amounts.
 
 ## Reporting
 
-To report a vulnerability, email research@eternax.ai with the subject "eternax-bitcoin-vault security". Please don't open a public issue for anything that could put funds at risk.
+To report a vulnerability, email info@eternax.ai with the subject "eternax-bitcoin-vault security". Please don't open a public issue for anything that could put funds at risk.
