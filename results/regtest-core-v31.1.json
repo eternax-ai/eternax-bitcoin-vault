@@ -1,0 +1,97 @@
+{
+ "node": "/Satoshi:31.1.0/",
+ "lock_unlock": {
+  "keys": 100,
+  "vault_address": "bcrt1qczztvpsl0lwmg8sdaj43cpcx8e9kjztllt33jgl3j939l9qrgakq4uqgsm",
+  "funding_txid": "7027e8f43e62d053679b3d1d9ab3810fff35bf3f382c5c982284f85d200e196c",
+  "unlock_txid": "6180c025346cd06a2269c8f001a2ed2989f3bc267bc6ac840445d0fd4f3f8fec",
+  "witness_script_bytes": 3500,
+  "witness_items": 101,
+  "weight": 11034,
+  "vsize": 2759,
+  "core_vsize": 2759,
+  "fee_sat": 13795,
+  "mempool_allowed": true,
+  "confirmations": 1,
+  "build_and_sign_ms": 45.6
+ },
+ "bitcoin_core_wallet": {
+  "keys": 100,
+  "checksum_matches_core": true,
+  "address_matches_ours": true,
+  "imported": true,
+  "unlock_txid": "246c5f7a84553d7436f90fcd1d57a595f63dc75ec5b7f885cb93f807df3046d1",
+  "witness_items": 101,
+  "vsize": 2758,
+  "weight": 11032,
+  "confirmations": 1
+ },
+ "limits": [
+  {
+   "keys": 100,
+   "script_bytes": 3500,
+   "witness_items": 101,
+   "standard": true,
+   "consensus_valid": true,
+   "vsize": 2758,
+   "mempool": "accepted",
+   "block": "valid"
+  },
+  {
+   "keys": 101,
+   "script_bytes": 3535,
+   "witness_items": 102,
+   "standard": false,
+   "consensus_valid": true,
+   "vsize": 2786,
+   "mempool": "bad-witness-nonstandard",
+   "block": "valid"
+  },
+  {
+   "keys": 201,
+   "script_bytes": 7035,
+   "witness_items": 202,
+   "standard": false,
+   "consensus_valid": true,
+   "vsize": 5460,
+   "mempool": "bad-witness-nonstandard",
+   "block": "valid"
+  },
+  {
+   "keys": 202,
+   "script_bytes": 7070,
+   "witness_items": 203,
+   "standard": false,
+   "consensus_valid": false,
+   "vsize": 5487,
+   "mempool": "bad-witness-nonstandard",
+   "block": "invalid: Operation limit exceeded"
+  }
+ ],
+ "odds": {
+  "1": {
+   "1": 0.4065696597405991,
+   "5": 0.4065696597405991,
+   "10": 0.4065696597405991,
+   "20": 0.4065696597405991,
+   "50": 0.4065696597405991,
+   "100": 0.4065696597405991
+  },
+  "20": {
+   "1": 1.522997974471263e-08,
+   "5": 0.02732372244729256,
+   "10": 0.16529888822158653,
+   "20": 0.4065696597405991,
+   "50": 0.4065696597405991,
+   "100": 0.4065696597405991
+  },
+  "100": {
+   "1": 8.194012623990515e-40,
+   "5": 1.522997974471263e-08,
+   "10": 0.00012340980408667956,
+   "20": 0.011108996538242306,
+   "50": 0.16529888822158653,
+   "100": 0.4065696597405991
+  }
+ }
+}

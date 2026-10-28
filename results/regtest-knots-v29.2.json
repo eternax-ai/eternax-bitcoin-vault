@@ -1,0 +1,222 @@
+{
+ "node": "/Satoshi:29.2.0/Knots:20251110/",
+ "binary": {
+  "file": "bitcoin-29.2.knots20251110-arm64-apple-darwin.tar.gz",
+  "source": "https://bitcoinknots.org/files/29.x/29.2.knots20251110/",
+  "sha256": "09620d1e2eab9b6339e7a0469167991adfc6ea85d97e0acea0e9a0dfbbc5c649",
+  "sha256sums_matches": true,
+  "sha256sums_good_signatures": [
+   "Luke Dashjr (Codesigning) 1A3E761F19D2CC7785C5502EA291A2C45D0C504A",
+   "Leo Haf DAED928C727D3E613EC46635F5073C4F4882FFFC",
+   "ataraxia009 C1BCB7169AF1A07A0C5E471A047509FA0A6D7350"
+  ],
+  "signer_keys_from": "https://github.com/bitcoinknots/guix.sigs/tree/main/builder-keys"
+ },
+ "default_policy": [
+  {
+   "keys": 1,
+   "script_bytes": 35,
+   "sig_bytes": 71,
+   "stack_bytes": 106,
+   "stack_bytes_serialized": 109,
+   "vsize": 113,
+   "allowed": true,
+   "reject": null,
+   "details": null,
+   "sent_txid": "0818b95b6d38cf76e12794f62841fef4a6322a3632916d9eadc379301dbacb05",
+   "confirmations": 1
+  },
+  {
+   "keys": 10,
+   "script_bytes": 350,
+   "sig_bytes": 710,
+   "stack_bytes": 1060,
+   "stack_bytes_serialized": 1074,
+   "vsize": 354,
+   "allowed": true,
+   "reject": null,
+   "details": null,
+   "sent_txid": "81fce1184b997e44b7b0138520f7b80f1417b4671364933505322eb98dfcbca6",
+   "confirmations": 1
+  },
+  {
+   "keys": 15,
+   "script_bytes": 525,
+   "sig_bytes": 1065,
+   "stack_bytes": 1590,
+   "stack_bytes_serialized": 1609,
+   "vsize": 488,
+   "allowed": true,
+   "reject": null,
+   "details": null,
+   "sent_txid": "ca34d566cd1ce6ec3c89825ab18cafc2f472d03df9573f4d514433b81750e1a0",
+   "confirmations": 1
+  },
+  {
+   "keys": 15,
+   "script_bytes": 525,
+   "sig_bytes": 1064,
+   "stack_bytes": 1589,
+   "stack_bytes_serialized": 1608,
+   "vsize": 488,
+   "allowed": true,
+   "reject": null,
+   "details": null,
+   "sent_txid": "b085f4d7c3ab45a1f48d15525c2e6f429f4b90590bf38b8295b43e22b8f2aa80",
+   "confirmations": 1
+  },
+  {
+   "keys": 15,
+   "script_bytes": 525,
+   "sig_bytes": 1065,
+   "stack_bytes": 1590,
+   "stack_bytes_serialized": 1609,
+   "vsize": 488,
+   "allowed": true,
+   "reject": null,
+   "details": null,
+   "sent_txid": "0d97f1c0b9d36c64a4246141f3af37a771e75b90070210573a8479204dcf903a",
+   "confirmations": 1
+  },
+  {
+   "keys": 15,
+   "script_bytes": 525,
+   "sig_bytes": 1065,
+   "stack_bytes": 1590,
+   "stack_bytes_serialized": 1609,
+   "vsize": 488,
+   "allowed": true,
+   "reject": null,
+   "details": null,
+   "sent_txid": "32f6dd239e0f024eefe3856d2c6095e142aa22aa0ebc44aef919743972626036",
+   "confirmations": 1
+  },
+  {
+   "keys": 16,
+   "script_bytes": 560,
+   "sig_bytes": 1136,
+   "stack_bytes": 1696,
+   "stack_bytes_serialized": 1716,
+   "vsize": 515,
+   "allowed": false,
+   "reject": "bad-witness-witness-size",
+   "details": "bad-witness-witness-size"
+  },
+  {
+   "keys": 17,
+   "script_bytes": 595,
+   "sig_bytes": 1207,
+   "stack_bytes": 1802,
+   "stack_bytes_serialized": 1823,
+   "vsize": 542,
+   "allowed": false,
+   "reject": "bad-witness-witness-size",
+   "details": "bad-witness-witness-size"
+  },
+  {
+   "keys": 18,
+   "script_bytes": 630,
+   "sig_bytes": 1278,
+   "stack_bytes": 1908,
+   "stack_bytes_serialized": 1930,
+   "vsize": 568,
+   "allowed": false,
+   "reject": "bad-witness-witness-size",
+   "details": "bad-witness-witness-size"
+  },
+  {
+   "keys": 19,
+   "script_bytes": 665,
+   "sig_bytes": 1349,
+   "stack_bytes": 2014,
+   "stack_bytes_serialized": 2037,
+   "vsize": 595,
+   "allowed": false,
+   "reject": "bad-witness-witness-size",
+   "details": "bad-witness-witness-size"
+  },
+  {
+   "keys": 20,
+   "script_bytes": 700,
+   "sig_bytes": 1420,
+   "stack_bytes": 2120,
+   "stack_bytes_serialized": 2144,
+   "vsize": 622,
+   "allowed": false,
+   "reject": "bad-witness-witness-size",
+   "details": "bad-witness-witness-size"
+  },
+  {
+   "keys": 50,
+   "script_bytes": 1750,
+   "sig_bytes": 3549,
+   "stack_bytes": 5299,
+   "stack_bytes_serialized": 5353,
+   "vsize": 1424,
+   "allowed": false,
+   "reject": "bad-witness-witness-size",
+   "details": "bad-witness-witness-size"
+  },
+  {
+   "keys": 100,
+   "script_bytes": 3500,
+   "sig_bytes": 7099,
+   "stack_bytes": 10599,
+   "stack_bytes_serialized": 10703,
+   "vsize": 2762,
+   "allowed": false,
+   "reject": "bad-witness-witness-size",
+   "details": "bad-witness-witness-size"
+  }
+ ],
+ "maxscriptsize_1600": [
+  {
+   "keys": 15,
+   "script_bytes": 525,
+   "sig_bytes": 1065,
+   "stack_bytes": 1590,
+   "stack_bytes_serialized": 1609,
+   "vsize": 488,
+   "allowed": false,
+   "reject": "bad-witness-witness-size",
+   "details": "bad-witness-witness-size"
+  },
+  {
+   "keys": 15,
+   "script_bytes": 525,
+   "sig_bytes": 1065,
+   "stack_bytes": 1590,
+   "stack_bytes_serialized": 1609,
+   "vsize": 488,
+   "allowed": false,
+   "reject": "bad-witness-witness-size",
+   "details": "bad-witness-witness-size"
+  }
+ ],
+ "maxscriptsize_11000": [
+  {
+   "keys": 100,
+   "script_bytes": 3500,
+   "sig_bytes": 7100,
+   "stack_bytes": 10600,
+   "stack_bytes_serialized": 10704,
+   "vsize": 2762,
+   "allowed": true,
+   "reject": null,
+   "details": null,
+   "sent_txid": "bc8f174c24b979589d5bfa8dbce37a1fe95e43eac797c1473d183b68f7a69c81",
+   "confirmations": 1
+  },
+  {
+   "keys": 101,
+   "script_bytes": 3535,
+   "sig_bytes": 7170,
+   "stack_bytes": 10705,
+   "stack_bytes_serialized": 10810,
+   "vsize": 2788,
+   "allowed": false,
+   "reject": "bad-witness-stackitem-count",
+   "details": "bad-witness-stackitem-count"
+  }
+ ]
+}
