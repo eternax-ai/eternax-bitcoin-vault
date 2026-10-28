@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eternax-bitcoin-vault"
+version = "0.1.0"
+description = "Hundred-key one-time P2WSH vaults: a quantum work factor for Bitcoin, without a fork"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "EternaX Labs" }]
+requires-python = ">=3.10,<3.13"   # coincurve 20 (bip32 5.0.0 caps it below 21) has no wheels for 3.13+
+dependencies = ["coincurve>=20", "bip32>=4", "mnemonic>=0.20"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+eternax-vault = "eternax_vault.cli:main"
+
+[tool.setuptools]
+packages = ["eternax_vault"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
