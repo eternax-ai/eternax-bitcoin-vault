@@ -4,6 +4,7 @@
     eternax-vault lock       --seed-file vault.seed --network mainnet            # prints the address to send to
     eternax-vault unlock     --seed-file vault.seed --network mainnet \\
                              --utxo <txid>:0:100000 [--utxo …] --to <address> --feerate 5    # every output at the address
+                             [--amount <sats> --change-deposit 1]          # pay part, the rest to a fresh vault
     eternax-vault descriptor --seed-file vault.seed --network mainnet --private  # for Bitcoin Core
     eternax-vault odds       --keys 100
 """
@@ -21,7 +22,7 @@ from .encoding import address_to_script_pubkey, p2wsh_address
 from .keys import PURPOSE, new_mnemonic, pubkey, seed_from_mnemonic, vault_secrets
 from .odds import attack_odds
 from .rpc import RPC
-from .script import MAX_CONSENSUS_KEYS, MAX_STANDARD_KEYS, chain_script
+from .script import MAX_CONSENSUS_KEYS, MAX_STANDARD_KEYS, chain_script, p2wsh_script_pubkey
 from .tx import Outpoint, build_unlock
 
 DEFAULT_KEYS = 100
@@ -34,10 +35,11 @@ def _read_seed(path: str) -> bytes:
         sys.exit(f"{path}: {e}")
 
 
-def _secrets(args) -> list[bytes]:
+def _secrets(args, deposit: int | None = None) -> list[bytes]:
     if not 1 <= args.keys <= MAX_CONSENSUS_KEYS:
         sys.exit(f"--keys must be between 1 and {MAX_CONSENSUS_KEYS}")
-    return vault_secrets(_read_seed(args.seed_file), network.get(args.network), args.keys, args.deposit)
+    return vault_secrets(_read_seed(args.seed_file), network.get(args.network), args.keys,
+                         args.deposit if deposit is None else deposit)
 
 
 def cmd_new(args):
@@ -121,18 +123,28 @@ def cmd_unlock(args):
         prevouts = [Outpoint(t, v, sats) for (t, v), sats in sorted(on_chain.items())]
     else:
         sys.exit("--utxo is required without --rpc-url" if rpc is None else f"no confirmed outputs at {address}")
+    change_address = change_spk = None
+    if args.change_deposit is not None:
+        change_ws = chain_script([pubkey(s) for s in _secrets(args, args.change_deposit)])
+        change_address, change_spk = p2wsh_address(change_ws, net), p2wsh_script_pubkey(change_ws)
     t = time.perf_counter()
     try:
         tx = build_unlock(secrets, prevouts, address_to_script_pubkey(args.to, net), args.feerate,
-                          standard=not args.allow_nonstandard)
+                          standard=not args.allow_nonstandard, amount=args.amount, change_script_pubkey=change_spk)
     except ValueError as e:
         sys.exit(str(e))
     ms = (time.perf_counter() - t) * 1000
     raw = tx.serialize().hex()
-    fee = sum(p.amount for p in prevouts) - tx.outputs[0][0]
+    fee = sum(p.amount for p in prevouts) - sum(v for v, _ in tx.outputs)
     print(f"# txid {tx.txid}\n# {len(prevouts)} input(s) from {address}\n"
           f"# {tx.vsize} vB, {tx.weight} WU, fee {fee} sat ({fee / tx.vsize:.2f} sat/vB), "
           f"{len(secrets) * len(prevouts)} signatures in {ms:.0f} ms", file=sys.stderr)
+    if change_address:
+        print(f"# pays {tx.outputs[0][0]} sat to {args.to}; change {tx.outputs[1][0]} sat to {change_address} "
+              f"(deposit {args.change_deposit})", file=sys.stderr)
+        print(f"# WRITE DOWN WITH THE 24 WORDS: THE CHANGE IS IN DEPOSIT {args.change_deposit}, PATH "
+              f"m/{PURPOSE}'/{net.coin}'/0..{args.keys - 1}'/{args.change_deposit}'. IT MUST BE A DEPOSIT THAT HAS "
+              "NEVER BEEN SPENT: A SPENT VAULT'S KEYS ARE PUBLIC.", file=sys.stderr)
     if on_chain is None:
         print(f"# Check that these are all the outputs at {address}: any left behind is exposed once this confirms.",
               file=sys.stderr)
@@ -178,12 +190,18 @@ def main(argv=None):
     sp.add_argument("--private", action="store_true", help="include private keys so Bitcoin Core can sign")
     sp.set_defaults(func=cmd_descriptor)
 
-    sp = sub.add_parser("unlock", help="sign a transaction sweeping every output at the vault address")
+    sp = sub.add_parser("unlock", help="sign a transaction spending every output at the vault address")
     vault_args(sp)
     sp.add_argument("--utxo", type=_utxo, action="append",
                     help="TXID:VOUT:SATS of an output at the vault address; repeat for each. With --rpc-url, SATS "
                          "can be left out, and without --utxo every confirmed output at the address is swept")
     sp.add_argument("--to", required=True, help="destination address")
+    sp.add_argument("--amount", type=int,
+                    help="satoshis to pay to --to; the rest, less the fee, goes to the vault at --change-deposit. "
+                         "Without it, everything goes to --to")
+    sp.add_argument("--change-deposit", type=int,
+                    help="deposit index of the fresh vault, from the same seed, that takes the change; "
+                         "use an index that has never been spent")
     sp.add_argument("--feerate", type=float, required=True, help="sat/vB")
     sp.add_argument("--rpc-url", help="Bitcoin Core RPC, e.g. http://user:pass@127.0.0.1:8332")
     sp.add_argument("--rpc-cookie", help="path to Bitcoin Core's .cookie file instead of URL credentials")

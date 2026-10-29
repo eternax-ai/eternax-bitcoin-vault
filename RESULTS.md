@@ -23,6 +23,10 @@ Signatures are ground to low R, as Bitcoin Core's signer does, so sizes repeat t
 
 Three payments to one vault address, then `unlock --rpc-url … --broadcast` with no outputs listed. The tool found all three and swept them in one 3-input transaction, 101 witness items per input; accepted and mined. An unlock listing only one of the three was refused before signing. Covered by `tests/test_regtest.py`.
 
+### A payment with change to a fresh vault
+
+One 1 BTC deposit, then `unlock --amount 25000000 --change-deposit 1 --feerate 2 --broadcast`: 0.25 BTC to the payee and 0.74994396 BTC to the vault at deposit 1, in one transaction of 2,802 vB (Core's figure; 43 more than the one-output unlock) with a 5,604-sat fee; accepted and mined. The change vault then unlocked like any other (2,759 vB, mined). Change sent back to deposit 0, the vault being spent, was refused before signing. Covered by `tests/test_regtest.py`.
+
 ### Fees for a 2,759-vbyte unlock
 
 | Fee rate | Fee | At $82,700/BTC |
