@@ -59,6 +59,7 @@ Bitcoin Core v31.1, regtest, unmodified node. Full numbers are in [RESULTS.md](R
 | | Witness script | vsize | Node result |
 |---|---|---|---|
 | 100-key unlock (1 input, 1 output) | 3,500 B | 2,759 vB | accepted to mempool, mined |
+| 100-key unlock with change (1 input, payment + fresh vault) | 3,500 B | 2,802 vB | accepted to mempool, mined |
 
 Bitcoin Core's own wallet, given the same descriptor, derives the same address and produces the same spend, so the vault doesn't depend on this code.
 
@@ -96,6 +97,16 @@ eternax-vault unlock --seed-file vault.seed --network mainnet \
 ```
 
 `unlock` prints the signed transaction. Broadcast it from your own node, or pass `--rpc-url http://user:pass@127.0.0.1:8332 --broadcast`. With `--rpc-url`, leave out `--utxo`: the tool asks the node for every confirmed output at the address and sweeps them all, and if you do list outputs, it refuses to leave any behind. The transaction signals replace-by-fee, and re-signing at a higher fee rate reveals nothing new: by then the keys are already in the mempool.
+
+To pay part of the balance, give the payment in satoshis and a fresh deposit index for the change. The same transaction still spends every output at the address; the rest, less the fee, goes to the vault at that index, derived from the same seed:
+
+```bash
+eternax-vault unlock --seed-file vault.seed --network mainnet \
+    --utxo <txid>:<vout>:<sats> \
+    --to <payee address> --amount <sats> --change-deposit 1 --feerate 5
+```
+
+The change output adds 43 vbytes. The tool refuses change sent back to the vault being spent, but it can't see whether the change index was spent before, and a spent vault's keys are public: use an index that has never been spent, and write it down with the 24 words.
 
 ### For meaningful amounts: let Bitcoin Core hold and spend
 
@@ -155,7 +166,7 @@ Add *i* to the paper with the path. This tool takes the child phrase like any ot
 ## Rules
 
 1. **Receive many times, spend once.** An address can take any number of payments, and its keys stay hidden until the first spend. That spend puts all 100 public keys on-chain, so `unlock` sweeps every output at the address together, and the address is then retired: anything sent to it later is exposed at rest. Unlock once every deposit has confirmed and no more are on the way. Use `--deposit 1`, `2`, … for new vaults.
-2. **Sweep everything.** `unlock` spends every output at the address to one destination. For change, sweep to a fresh vault address.
+2. **Sweep everything.** `unlock` spends every output at the address, either all to one destination or as a payment with the change in a fresh vault (`--amount`, `--change-deposit`). Nothing stays at the spent address, and nothing goes back to it.
 3. **One vault per transaction.** Each input carries its own 100 signatures, about 2,700 vbytes, so one standard transaction sweeps up to 36 outputs. Don't mix vaults. It adds no work for an attacker, since stealing an input needs only its own vault's keys, and an attacker who breaks one vault could replace the whole transaction while the other vaults' keys sit in the mempool.
 4. **Keep the 24 words, the descriptor and the master xpub secret.** The address is a hash and safe to share; the public keys behind it are not, until you spend. That is the same rule as for any P2PKH or P2WPKH address under a quantum threat, applied to 100 keys. The master xpub sits above every vault, so to a quantum computer it is as good as the seed.
 5. **Cap the value per vault.** An attacker who can't win the race outright can try to delay your spend by outbidding it, and that costs about one block's worth of fees per block of delay. Keep each vault well below what that delay would cost. Defending is cheap: you re-bid one transaction of about 2,760 vbytes per input while the attacker outbids whole blocks.
