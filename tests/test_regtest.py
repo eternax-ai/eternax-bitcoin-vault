@@ -40,6 +40,31 @@ def test_unlock_sweeps_every_deposit_at_the_address(node, tmp_path, capsys):
     assert node.rpc("scantxoutset", "start", [f"addr({address})"])["unspents"] == []
 
 
+def test_unlock_pays_and_sends_the_change_to_a_fresh_vault(node, tmp_path, capsys):
+    seed = str(tmp_path / "vault.seed")
+    cli.main(["new", "--seed-file", seed])
+    addresses = []
+    for deposit in ("0", "1"):
+        cli.main(["lock", "--seed-file", seed, "--network", "regtest", "--deposit", deposit])
+        addresses.append(capsys.readouterr().out.strip().splitlines()[-1])
+    funded = node.fund(addresses[0], 0.5)
+    payee = node.miner("getnewaddress")
+    rpc = ["--rpc-url", URL] + (["--rpc-cookie", COOKIE] if COOKIE else [])
+    pay = ["unlock", "--seed-file", seed, "--network", "regtest", "--to", payee, "--amount", "10000000",
+           "--feerate", "2"] + rpc
+    with pytest.raises(SystemExit, match="exposes the vault's keys"):          # change back to the spent vault
+        cli.main(pay + ["--change-deposit", "0"])
+    cli.main(pay + ["--change-deposit", "1", "--broadcast"])
+    tx = node.rpc("getrawtransaction", capsys.readouterr().out.strip(), True, node.mine(1)[0])
+    outputs = [(o["scriptPubKey"]["address"], round(o["value"] * 100_000_000)) for o in tx["vout"]]
+    assert outputs[0] == (payee, 10_000_000) and outputs[1][0] == addresses[1] and tx["confirmations"] == 1
+    assert funded.amount - sum(sats for _, sats in outputs) >= 2 * tx["vsize"]
+    assert node.rpc("scantxoutset", "start", [f"addr({addresses[0]})"])["unspents"] == []
+    cli.main(["unlock", "--seed-file", seed, "--network", "regtest", "--deposit", "1", "--to", node.mine_addr,
+              "--feerate", "2", "--broadcast"] + rpc)                          # the change vault unlocks like any other
+    assert node.confirmations(capsys.readouterr().out.strip(), node.mine(1)[0]) == 1
+
+
 def test_hundred_key_lock_and_unlock(node):
     r = lock_and_unlock(node, 100)
     assert r["mempool_allowed"] and r["confirmations"] == 1

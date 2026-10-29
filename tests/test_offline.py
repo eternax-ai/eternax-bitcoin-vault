@@ -10,7 +10,7 @@ from eternax_vault.encoding import address_to_script_pubkey, p2wsh_address, segw
 from eternax_vault.keys import new_mnemonic, pubkey, seed_from_mnemonic, sign_low_r, vault_secrets
 from eternax_vault.odds import attack_odds
 from eternax_vault.script import OP_CHECKSIG, OP_CHECKSIGVERIFY, chain_script, limits, p2wsh_script_pubkey
-from eternax_vault.tx import Outpoint, build_unlock
+from eternax_vault.tx import Outpoint, build_unlock, dust_threshold, vault_script_pubkey
 
 REGTEST, MAINNET = network.get("regtest"), network.get("mainnet")
 SEED = bytes(range(32))
@@ -155,6 +155,53 @@ def test_unlock_refuses_empty_duplicate_and_oversized_sweeps():
     assert build_unlock(secrets, many[:36], dest, feerate=1).weight <= 400_000         # 36 hundred-key inputs fit
     with pytest.raises(ValueError, match="standard limit"):
         build_unlock(secrets, many, dest, feerate=1)
+
+
+def test_unlock_pays_and_sends_the_change_to_a_fresh_vault():
+    secrets = vault_secrets(SEED, REGTEST, 100, 0)
+    change = vault_script_pubkey(vault_secrets(SEED, REGTEST, 100, 1))
+    prevouts = [Outpoint("55" * 32, 0, 1_000_000), Outpoint("66" * 32, 1, 500_000)]
+    dest = address_to_script_pubkey("bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080", REGTEST)
+    tx = build_unlock(secrets, prevouts, dest, feerate=5, amount=300_000, change_script_pubkey=change)
+    ws = chain_script([pubkey(s) for s in secrets])
+    assert tx.outputs[0] == (300_000, dest) and tx.outputs[1][1] == change and len(tx.outputs) == 2
+    assert 1_500_000 - 300_000 - tx.outputs[1][0] >= math.ceil(tx.vsize * 5)
+    one = build_unlock(secrets, prevouts[:1], dest, feerate=5, amount=300_000, change_script_pubkey=change)
+    sweep = build_unlock(secrets, prevouts[:1], dest, feerate=5)
+    assert len(one.serialize(False)) - len(sweep.serialize(False)) == 43             # the change output: 43 vB
+    assert 2790 <= one.vsize <= 2805
+    for i, witness in enumerate(tx.witnesses):                                       # signatures cover both outputs
+        for sig, secret in zip(witness[-2::-1], secrets):
+            assert coincurve.PublicKey(pubkey(secret)).verify(sig[:-1], tx.sighash(i, ws), hasher=None)
+
+
+def test_unlock_refuses_bad_payments_and_change():
+    secrets = vault_secrets(SEED, REGTEST, 100, 0)
+    own = vault_script_pubkey(secrets)
+    change = vault_script_pubkey(vault_secrets(SEED, REGTEST, 100, 1))
+    dest = b"\x00\x14" + b"\x01" * 20
+    prevout = [Outpoint("77" * 32, 0, 100_000)]
+    with pytest.raises(ValueError, match="needs a change vault"):
+        build_unlock(secrets, prevout, dest, feerate=1, amount=50_000)
+    with pytest.raises(ValueError, match="needs a payment amount"):
+        build_unlock(secrets, prevout, dest, feerate=1, change_script_pubkey=change)
+    with pytest.raises(ValueError, match="exposes the vault's keys"):                 # change back to the spent vault
+        build_unlock(secrets, prevout, dest, feerate=1, amount=50_000, change_script_pubkey=own)
+    with pytest.raises(ValueError, match="exposes the vault's keys"):                 # or a sweep back to it
+        build_unlock(secrets, prevout, own, feerate=1)
+    with pytest.raises(ValueError, match="payment is under"):
+        build_unlock(secrets, prevout, dest, feerate=1, amount=293, change_script_pubkey=change)
+    with pytest.raises(ValueError, match="does not cover"):
+        build_unlock(secrets, prevout, dest, feerate=1, amount=99_000, change_script_pubkey=change)
+    with pytest.raises(ValueError, match="change would be"):
+        build_unlock(secrets, prevout, dest, feerate=1, amount=97_000, change_script_pubkey=change)
+
+
+def test_dust_limits_match_bitcoin_core():
+    assert dust_threshold(b"\x00\x14" + b"\x01" * 20) == 294                       # P2WPKH
+    assert dust_threshold(b"\x00\x20" + b"\x01" * 32) == 330                       # P2WSH
+    assert dust_threshold(b"\x51\x20" + b"\x01" * 32) == 330                       # P2TR
+    assert dust_threshold(address_to_script_pubkey("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2", MAINNET)) == 546   # P2PKH
 
 
 def test_unlock_refuses_nonstandard_unless_asked():

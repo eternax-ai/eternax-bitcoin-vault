@@ -2,8 +2,8 @@
 
 A vault address can receive any number of payments, but it is spent once: that spend reveals all
 of its public keys, so an output left behind would sit exposed at rest. The unlock therefore sweeps
-every output at the address in one transaction, each input carrying its own signatures, to one
-destination (no partial spends; send change to a fresh vault). Outputs of different vaults are never
+every output at the address in one transaction, each input carrying its own signatures, either all
+to one destination or as a payment plus change to a fresh vault. Outputs of different vaults are never
 mixed: that adds no work for an attacker, and one broken vault would let them replace the whole
 transaction while the other vaults' keys sit in the mempool.
 """
@@ -36,6 +36,14 @@ def varint(n: int) -> bytes:
 
 def push(b: bytes) -> bytes:
     return varint(len(b)) + b
+
+
+def dust_threshold(script_pubkey: bytes) -> int:
+    """Bitcoin Core's dust limit at its default 3 sat/vB dust relay fee (src/policy/policy.cpp GetDustThreshold)."""
+    witness_program = (4 <= len(script_pubkey) <= 42 and script_pubkey[0] in (0, *range(0x51, 0x61))
+                       and script_pubkey[1] == len(script_pubkey) - 2)
+    spend_size = 67 if witness_program else 148      # bytes to spend the output later, witness discounted
+    return 3 * (8 + len(push(script_pubkey)) + spend_size)
 
 
 @dataclass(frozen=True)
@@ -97,8 +105,10 @@ class UnlockTx:
 
 
 def build_unlock(secrets: list[bytes], prevouts: list[Outpoint], dest_script_pubkey: bytes,
-                 feerate: float, standard: bool = True) -> UnlockTx:
-    """Sweep every listed output of one vault to one destination at `feerate` sat/vB, signed by every key."""
+                 feerate: float, standard: bool = True,
+                 amount: int | None = None, change_script_pubkey: bytes | None = None) -> UnlockTx:
+    """Spend every listed output of one vault at `feerate` sat/vB, signed by every key: all of it to the
+    destination, or `amount` satoshis to the destination and the rest to `change_script_pubkey`, a fresh vault."""
     pubkeys = [pubkey(s) for s in secrets]
     ws = chain_script(pubkeys)
     if not prevouts:
@@ -107,17 +117,34 @@ def build_unlock(secrets: list[bytes], prevouts: list[Outpoint], dest_script_pub
         raise ValueError("the same output is listed twice")
     if standard and len(secrets) > 100:
         raise ValueError("more than 100 keys is non-standard; pass standard=False and submit to a miner directly")
+    if (amount is None) != (change_script_pubkey is None):
+        raise ValueError("a payment amount needs a change vault, and a change vault needs a payment amount")
+    if p2wsh_script_pubkey(ws) in (dest_script_pubkey, change_script_pubkey):
+        raise ValueError("this unlock exposes the vault's keys, so nothing may go back to it; use a fresh vault")
     # size the transaction with placeholder signatures, then sign for real (low-R keeps it within the estimate)
     total = sum(p.amount for p in prevouts)
-    tx = UnlockTx(list(prevouts), [(total, dest_script_pubkey)],
-                  [[PLACEHOLDER_SIG] * len(secrets) + [ws] for _ in prevouts])
+    outputs = [(total, dest_script_pubkey)]
+    if amount is not None:
+        outputs = [(amount, dest_script_pubkey), (total, change_script_pubkey)]
+    tx = UnlockTx(list(prevouts), outputs, [[PLACEHOLDER_SIG] * len(secrets) + [ws] for _ in prevouts])
     if standard and tx.weight > MAX_STANDARD_TX_WEIGHT:
         raise ValueError(f"{len(prevouts)} outputs make a {tx.weight} WU transaction, over the {MAX_STANDARD_TX_WEIGHT} WU "
                          "standard limit; no standard transaction can sweep them all")
     fee = math.ceil(tx.vsize * feerate)
-    if total - fee < 330:
-        raise ValueError(f"amount {total} sat does not cover a {fee} sat fee plus dust")
-    tx.outputs = [(total - fee, dest_script_pubkey)]
+    if amount is None:
+        if total - fee < dust_threshold(dest_script_pubkey):
+            raise ValueError(f"amount {total} sat does not cover a {fee} sat fee plus dust")
+        tx.outputs = [(total - fee, dest_script_pubkey)]
+    else:
+        change = total - amount - fee
+        if amount < dust_threshold(dest_script_pubkey):
+            raise ValueError(f"a {amount} sat payment is under the {dust_threshold(dest_script_pubkey)} sat dust limit")
+        if change < 0:
+            raise ValueError(f"{total} sat does not cover a {amount} sat payment plus a {fee} sat fee")
+        if change < dust_threshold(change_script_pubkey):
+            raise ValueError(f"the change would be {change} sat, under the {dust_threshold(change_script_pubkey)} sat "
+                             "dust limit; pay less, or send everything to the destination")
+        tx.outputs = [(amount, dest_script_pubkey), (change, change_script_pubkey)]
     for i in range(len(prevouts)):
         sighash = tx.sighash(i, ws)
         sigs = [sign_low_r(s, sighash) + bytes([SIGHASH_ALL]) for s in secrets]
