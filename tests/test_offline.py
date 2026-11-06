@@ -228,6 +228,29 @@ def test_cli_refuses_bad_unlock_arguments_without_printing_a_transaction(tmp_pat
     assert capsys.readouterr().out == ""
 
 
+def test_unlock_refuses_a_fee_over_the_ceiling_unless_raised():
+    secrets = vault_secrets(SEED, REGTEST, 100, 0)
+    dest = b"\x00\x14" + b"\x01" * 20
+    prevout = [Outpoint("aa" * 32, 0, 100_000_000)]
+    for feerate in (5_000, 20_000):                                                  # about 0.14 and 0.55 BTC
+        with pytest.raises(ValueError, match="over the 10000000 sat ceiling"):
+            build_unlock(secrets, prevout, dest, feerate=feerate)
+    tx = build_unlock(secrets, prevout, dest, feerate=5_000, max_fee=20_000_000)
+    assert 100_000_000 - tx.outputs[0][0] == math.ceil(tx.vsize * 5_000)
+
+
+def test_cli_fee_ceiling_and_its_override(tmp_path, capsys):
+    seed = str(tmp_path / "vault.seed")
+    cli.main(["new", "--seed-file", seed])
+    unlock = ["unlock", "--seed-file", seed, "--network", "regtest", "--to", "bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080",
+              "--utxo", "aa" * 32 + ":0:100000000", "--feerate", "5000"]
+    with pytest.raises(SystemExit, match="ceiling"):
+        cli.main(unlock)
+    capsys.readouterr()
+    cli.main(unlock + ["--max-fee", "20000000"])
+    assert len(bytes.fromhex(capsys.readouterr().out.strip())) > 7000                # the signed unlock
+
+
 def test_dust_limits_match_bitcoin_core():
     assert dust_threshold(b"\x00\x14" + b"\x01" * 20) == 294                       # P2WPKH
     assert dust_threshold(b"\x00\x20" + b"\x01" * 32) == 330                       # P2WSH

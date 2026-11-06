@@ -23,7 +23,7 @@ from .keys import PURPOSE, new_mnemonic, pubkey, seed_from_mnemonic, vault_secre
 from .odds import attack_odds
 from .rpc import RPC
 from .script import MAX_CONSENSUS_KEYS, MAX_STANDARD_KEYS, chain_script, p2wsh_script_pubkey
-from .tx import Outpoint, build_unlock
+from .tx import MAX_FEE, Outpoint, build_unlock
 
 DEFAULT_KEYS = 100
 
@@ -144,7 +144,8 @@ def cmd_unlock(args):
     t = time.perf_counter()
     try:
         tx = build_unlock(secrets, prevouts, address_to_script_pubkey(args.to, net), args.feerate,
-                          standard=not args.allow_nonstandard, amount=args.amount, change_script_pubkey=change_spk)
+                          standard=not args.allow_nonstandard, amount=args.amount, change_script_pubkey=change_spk,
+                          max_fee=args.max_fee)
     except ValueError as e:
         sys.exit(str(e))
     ms = (time.perf_counter() - t) * 1000
@@ -217,6 +218,9 @@ def main(argv=None):
                     help="deposit index of the fresh vault, from the same seed, that takes the change; "
                          "use an index that has never been spent")
     sp.add_argument("--feerate", type=float, required=True, help="sat/vB")
+    sp.add_argument("--max-fee", type=int, default=MAX_FEE,
+                    help=f"refuse a fee above this many satoshis (default {MAX_FEE}, 0.1 BTC, as Bitcoin Core's "
+                         "-maxtxfee)")
     sp.add_argument("--rpc-url", help="Bitcoin Core RPC, e.g. http://user:pass@127.0.0.1:8332")
     sp.add_argument("--rpc-cookie", help="path to Bitcoin Core's .cookie file instead of URL credentials")
     sp.add_argument("--broadcast", action="store_true", help="check with testmempoolaccept, then send")
