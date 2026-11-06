@@ -128,10 +128,14 @@ def cmd_unlock(args):
             sys.exit(f"{address} also holds {missing}; list every output, or it is exposed once this unlock confirms")
         prevouts = []
         for txid, vout, sats in args.utxo:
-            if sats is None:
-                if on_chain is None or (txid, vout) not in on_chain:
-                    sys.exit(f"{txid}:{vout}: give the amount as TXID:VOUT:SATS, or a --rpc-url whose node has it confirmed")
+            if on_chain is not None:            # signatures over a wrong output or amount are invalid, yet expose the keys
+                if (txid, vout) not in on_chain:
+                    sys.exit(f"{txid}:{vout} is not a confirmed output at {address}")
+                if sats is not None and sats != on_chain[(txid, vout)]:
+                    sys.exit(f"{txid}:{vout} holds {on_chain[(txid, vout)]} sat, not {sats}")
                 sats = on_chain[(txid, vout)]
+            elif sats is None:
+                sys.exit(f"{txid}:{vout}: give the amount as TXID:VOUT:SATS, or a --rpc-url whose node has it confirmed")
             prevouts.append(Outpoint(txid, vout, sats))
     elif on_chain:
         prevouts = [Outpoint(t, v, sats) for (t, v), sats in sorted(on_chain.items())]
@@ -209,7 +213,8 @@ def main(argv=None):
     vault_args(sp)
     sp.add_argument("--utxo", type=_utxo, action="append",
                     help="TXID:VOUT:SATS of an output at the vault address; repeat for each. With --rpc-url, SATS "
-                         "can be left out, and without --utxo every confirmed output at the address is swept")
+                         "can be left out, each output must match the node's, and without --utxo every confirmed "
+                         "output at the address is swept")
     sp.add_argument("--to", required=True, help="destination address")
     sp.add_argument("--amount", type=int,
                     help="satoshis to pay to --to; the rest, less the fee, goes to the vault at --change-deposit. "

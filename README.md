@@ -96,7 +96,7 @@ eternax-vault unlock --seed-file vault.seed --network mainnet \
     --to <destination address> --feerate 5
 ```
 
-`unlock` prints the signed transaction. Broadcast it from your own node, or pass `--rpc-url http://user:pass@127.0.0.1:8332 --broadcast`. With `--rpc-url`, leave out `--utxo`: the tool asks the node for every confirmed output at the address and sweeps them all, and if you do list outputs, it refuses to leave any behind. The transaction signals replace-by-fee, and re-signing at a higher fee rate reveals nothing new: by then the keys are already in the mempool. To catch a mistyped fee rate, `unlock` refuses a fee above 0.1 BTC, the default ceiling in Bitcoin Core's wallet; `--max-fee <sats>` raises it.
+`unlock` prints the signed transaction. Broadcast it from your own node, or pass `--rpc-url http://user:pass@127.0.0.1:8332 --broadcast`. With `--rpc-url`, leave out `--utxo`: the tool asks the node for every confirmed output at the address and sweeps them all, and if you do list outputs, it refuses to leave any behind and checks each one, with its amount, against the node. The transaction signals replace-by-fee, and re-signing at a higher fee rate reveals nothing new: by then the keys are already in the mempool. To catch a mistyped fee rate, `unlock` refuses a fee above 0.1 BTC, the default ceiling in Bitcoin Core's wallet; `--max-fee <sats>` raises it.
 
 To pay part of the balance, give the payment in satoshis and a fresh deposit index for the change. The same transaction still spends every output at the address; the rest, less the fee, goes to the vault at that index, derived from the same seed:
 
