@@ -20,6 +20,7 @@ SIGHASH_ALL = 1
 SEQUENCE_RBF = 0xFFFFFFFD          # signals replace-by-fee; re-signing reveals nothing new
 PLACEHOLDER_SIG = b"\x30" + b"\x00" * 69 + b"\x01"   # 71 bytes: the size of a low-R signature + sighash byte
 MAX_STANDARD_TX_WEIGHT = 400_000   # Bitcoin Core src/policy/policy.h; about 36 hundred-key inputs
+MAX_BLOCK_WEIGHT = 4_000_000       # consensus, src/consensus/consensus.h: no heavier transaction can be mined
 MIN_RELAY_FEERATE = 0.1            # sat/vB, Bitcoin Core's default -minrelaytxfee
 
 
@@ -137,6 +138,9 @@ def build_unlock(secrets: list[bytes], prevouts: list[Outpoint], dest_script_pub
     if standard and tx.weight > MAX_STANDARD_TX_WEIGHT:
         raise ValueError(f"{len(prevouts)} outputs make a {tx.weight} WU transaction, over the {MAX_STANDARD_TX_WEIGHT} WU "
                          "standard limit; no standard transaction can sweep them all")
+    if tx.weight > MAX_BLOCK_WEIGHT:
+        raise ValueError(f"{len(prevouts)} outputs make a {tx.weight} WU transaction, over the {MAX_BLOCK_WEIGHT} WU "
+                         "consensus limit on a block; no transaction can sweep them all")
     fee = math.ceil(tx.vsize * feerate)
     if amount is None:
         if total - fee < dust_threshold(dest_script_pubkey):

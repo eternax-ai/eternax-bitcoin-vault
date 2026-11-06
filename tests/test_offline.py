@@ -244,6 +244,13 @@ def test_unlock_refuses_nonstandard_unless_asked():
     assert len(tx.witnesses[0]) == 102
 
 
+def test_nonstandard_unlock_stays_under_the_block_weight_limit():
+    secrets = vault_secrets(SEED, REGTEST, 201, 0)
+    many = [Outpoint("99" * 32, i, 10**6) for i in range(188)]                      # 188 × 201 keys: about 4,075,000 WU
+    with pytest.raises(ValueError, match="consensus limit"):
+        build_unlock(secrets, many, b"\x00\x14" + b"\x01" * 20, feerate=1, standard=False)
+
+
 def test_descriptor_is_the_same_script():
     secrets = vault_secrets(SEED, REGTEST, 3, 0)
     pub = vault_descriptor(secrets, REGTEST, private=False)
