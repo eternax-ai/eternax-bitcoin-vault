@@ -20,6 +20,7 @@ SIGHASH_ALL = 1
 SEQUENCE_RBF = 0xFFFFFFFD          # signals replace-by-fee; re-signing reveals nothing new
 PLACEHOLDER_SIG = b"\x30" + b"\x00" * 69 + b"\x01"   # 71 bytes: the size of a low-R signature + sighash byte
 MAX_STANDARD_TX_WEIGHT = 400_000   # Bitcoin Core src/policy/policy.h; about 36 hundred-key inputs
+MIN_RELAY_FEERATE = 0.1            # sat/vB, Bitcoin Core's default -minrelaytxfee
 
 
 def dsha256(b: bytes) -> bytes:
@@ -121,6 +122,12 @@ def build_unlock(secrets: list[bytes], prevouts: list[Outpoint], dest_script_pub
         raise ValueError("a payment amount needs a change vault, and a change vault needs a payment amount")
     if p2wsh_script_pubkey(ws) in (dest_script_pubkey, change_script_pubkey):
         raise ValueError("this unlock exposes the vault's keys, so nothing may go back to it; use a fresh vault")
+    # a transaction no node relays still exposes every key to whoever it is shown to, so refuse to sign one
+    if not math.isfinite(feerate) or feerate < MIN_RELAY_FEERATE:
+        raise ValueError(f"the fee rate must be at least {MIN_RELAY_FEERATE:g} sat/vB, Bitcoin Core's relay minimum; "
+                         f"got {feerate:g}")
+    if amount is not None and amount < dust_threshold(dest_script_pubkey):
+        raise ValueError(f"a {amount} sat payment is under the {dust_threshold(dest_script_pubkey)} sat dust limit")
     # size the transaction with placeholder signatures, then sign for real (low-R keeps it within the estimate)
     total = sum(p.amount for p in prevouts)
     outputs = [(total, dest_script_pubkey)]
@@ -137,8 +144,6 @@ def build_unlock(secrets: list[bytes], prevouts: list[Outpoint], dest_script_pub
         tx.outputs = [(total - fee, dest_script_pubkey)]
     else:
         change = total - amount - fee
-        if amount < dust_threshold(dest_script_pubkey):
-            raise ValueError(f"a {amount} sat payment is under the {dust_threshold(dest_script_pubkey)} sat dust limit")
         if change < 0:
             raise ValueError(f"{total} sat does not cover a {amount} sat payment plus a {fee} sat fee")
         if change < dust_threshold(change_script_pubkey):

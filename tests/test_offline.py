@@ -4,7 +4,7 @@ import math
 import coincurve
 import pytest
 
-from eternax_vault import network
+from eternax_vault import cli, network
 from eternax_vault.descriptor import checksum, vault_descriptor
 from eternax_vault.encoding import address_to_script_pubkey, p2wsh_address, segwit_decode, segwit_encode
 from eternax_vault.keys import new_mnemonic, pubkey, seed_from_mnemonic, sign_low_r, vault_secrets
@@ -195,6 +195,37 @@ def test_unlock_refuses_bad_payments_and_change():
         build_unlock(secrets, prevout, dest, feerate=1, amount=99_000, change_script_pubkey=change)
     with pytest.raises(ValueError, match="change would be"):
         build_unlock(secrets, prevout, dest, feerate=1, amount=97_000, change_script_pubkey=change)
+
+
+def test_unlock_refuses_what_no_node_would_relay():
+    secrets = vault_secrets(SEED, REGTEST, 100, 0)
+    change = vault_script_pubkey(vault_secrets(SEED, REGTEST, 100, 1))
+    dest = b"\x00\x14" + b"\x01" * 20
+    prevout = [Outpoint("88" * 32, 0, 100_000)]
+    for feerate in (-1, 0, 0.05, math.inf, math.nan):                                 # outputs over inputs, or under the floor
+        with pytest.raises(ValueError, match="relay minimum"):
+            build_unlock(secrets, prevout, dest, feerate=feerate)
+    with pytest.raises(ValueError, match="payment is under"):
+        build_unlock(secrets, prevout, dest, feerate=1, amount=-5, change_script_pubkey=change)
+    tx = build_unlock(secrets, prevout, dest, feerate=0.1)
+    assert 100_000 - tx.outputs[0][0] >= math.ceil(tx.vsize * 0.1)
+
+
+@pytest.mark.parametrize("args", [["--feerate", "0"], ["--feerate", "-1"], ["--feerate", "0.05"], ["--feerate", "inf"],
+                                  ["--feerate", "nan"], ["--feerate", "1", "--amount", "-5", "--change-deposit", "1"],
+                                  ["--feerate", "1", "--deposit", "-1"],
+                                  ["--feerate", "1", "--amount", "5000", "--change-deposit", "-1"],
+                                  ["--feerate", "1", "--utxo", "88" * 32 + ":-1:100000"],
+                                  ["--feerate", "1", "--utxo", "88" * 32 + ":0:-5"]])
+def test_cli_refuses_bad_unlock_arguments_without_printing_a_transaction(tmp_path, capsys, args):
+    seed = str(tmp_path / "vault.seed")
+    cli.main(["new", "--seed-file", seed])
+    capsys.readouterr()
+    utxo = [] if "--utxo" in args else ["--utxo", "88" * 32 + ":0:100000"]
+    with pytest.raises(SystemExit):
+        cli.main(["unlock", "--seed-file", seed, "--network", "regtest",
+                  "--to", "bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080"] + utxo + args)
+    assert capsys.readouterr().out == ""
 
 
 def test_dust_limits_match_bitcoin_core():

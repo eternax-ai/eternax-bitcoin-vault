@@ -85,12 +85,26 @@ def cmd_descriptor(args):
               "at rest the vault's protection is that nobody has seen them.", file=sys.stderr)
 
 
+def _index(text: str) -> int:
+    """A deposit index: one hardened BIP-32 level."""
+    try:
+        index = int(text)
+        if not 0 <= index < 2**31:
+            raise ValueError
+        return index
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected a deposit index from 0 to {2**31 - 1}, got {text!r}") from None
+
+
 def _utxo(text: str) -> tuple[str, int, int | None]:
     parts = text.split(":")
     try:
         if len(parts) not in (2, 3) or len(bytes.fromhex(parts[0])) != 32:
             raise ValueError
-        return parts[0].lower(), int(parts[1]), int(parts[2]) if len(parts) == 3 else None
+        vout, sats = int(parts[1]), int(parts[2]) if len(parts) == 3 else None
+        if not 0 <= vout < 2**32 or (sats is not None and sats <= 0):
+            raise ValueError
+        return parts[0].lower(), vout, sats
     except ValueError:
         raise argparse.ArgumentTypeError(f"expected TXID:VOUT or TXID:VOUT:SATS, got {text!r}") from None
 
@@ -175,7 +189,7 @@ def main(argv=None):
         sp.add_argument("--seed-file", required=True)
         sp.add_argument("--network", required=True, choices=list(network.NETWORKS))
         sp.add_argument("--keys", type=int, default=DEFAULT_KEYS, help=f"keys in the script (default {DEFAULT_KEYS})")
-        sp.add_argument("--deposit", type=int, default=0, help="deposit index; use each index once")
+        sp.add_argument("--deposit", type=_index, default=0, help="deposit index; use each index once")
 
     sp = sub.add_parser("new", help="create a seed file")
     sp.add_argument("--seed-file", required=True)
@@ -199,7 +213,7 @@ def main(argv=None):
     sp.add_argument("--amount", type=int,
                     help="satoshis to pay to --to; the rest, less the fee, goes to the vault at --change-deposit. "
                          "Without it, everything goes to --to")
-    sp.add_argument("--change-deposit", type=int,
+    sp.add_argument("--change-deposit", type=_index,
                     help="deposit index of the fresh vault, from the same seed, that takes the change; "
                          "use an index that has never been spent")
     sp.add_argument("--feerate", type=float, required=True, help="sat/vB")
