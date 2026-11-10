@@ -20,6 +20,9 @@ SIGHASH_ALL = 1
 SEQUENCE_RBF = 0xFFFFFFFD          # signals replace-by-fee; re-signing reveals nothing new
 PLACEHOLDER_SIG = b"\x30" + b"\x00" * 69 + b"\x01"   # 71 bytes: the size of a low-R signature + sighash byte
 MAX_STANDARD_TX_WEIGHT = 400_000   # Bitcoin Core src/policy/policy.h; about 36 hundred-key inputs
+MAX_BLOCK_WEIGHT = 4_000_000       # consensus, src/consensus/consensus.h: no heavier transaction can be mined
+MIN_RELAY_FEERATE = 0.1            # sat/vB, Bitcoin Core's default -minrelaytxfee
+MAX_FEE = 10_000_000               # sat (0.1 BTC), Bitcoin Core's default -maxtxfee: catches a mistyped fee rate
 
 
 def dsha256(b: bytes) -> bytes:
@@ -106,9 +109,11 @@ class UnlockTx:
 
 def build_unlock(secrets: list[bytes], prevouts: list[Outpoint], dest_script_pubkey: bytes,
                  feerate: float, standard: bool = True,
-                 amount: int | None = None, change_script_pubkey: bytes | None = None) -> UnlockTx:
+                 amount: int | None = None, change_script_pubkey: bytes | None = None,
+                 max_fee: int = MAX_FEE) -> UnlockTx:
     """Spend every listed output of one vault at `feerate` sat/vB, signed by every key: all of it to the
-    destination, or `amount` satoshis to the destination and the rest to `change_script_pubkey`, a fresh vault."""
+    destination, or `amount` satoshis to the destination and the rest to `change_script_pubkey`, a fresh vault.
+    A fee over `max_fee` satoshis is refused."""
     pubkeys = [pubkey(s) for s in secrets]
     ws = chain_script(pubkeys)
     if not prevouts:
@@ -121,6 +126,12 @@ def build_unlock(secrets: list[bytes], prevouts: list[Outpoint], dest_script_pub
         raise ValueError("a payment amount needs a change vault, and a change vault needs a payment amount")
     if p2wsh_script_pubkey(ws) in (dest_script_pubkey, change_script_pubkey):
         raise ValueError("this unlock exposes the vault's keys, so nothing may go back to it; use a fresh vault")
+    # a transaction no node relays still exposes every key to whoever it is shown to, so refuse to sign one
+    if not math.isfinite(feerate) or feerate < MIN_RELAY_FEERATE:
+        raise ValueError(f"the fee rate must be at least {MIN_RELAY_FEERATE:g} sat/vB, Bitcoin Core's relay minimum; "
+                         f"got {feerate:g}")
+    if amount is not None and amount < dust_threshold(dest_script_pubkey):
+        raise ValueError(f"a {amount} sat payment is under the {dust_threshold(dest_script_pubkey)} sat dust limit")
     # size the transaction with placeholder signatures, then sign for real (low-R keeps it within the estimate)
     total = sum(p.amount for p in prevouts)
     outputs = [(total, dest_script_pubkey)]
@@ -130,15 +141,19 @@ def build_unlock(secrets: list[bytes], prevouts: list[Outpoint], dest_script_pub
     if standard and tx.weight > MAX_STANDARD_TX_WEIGHT:
         raise ValueError(f"{len(prevouts)} outputs make a {tx.weight} WU transaction, over the {MAX_STANDARD_TX_WEIGHT} WU "
                          "standard limit; no standard transaction can sweep them all")
+    if tx.weight > MAX_BLOCK_WEIGHT:
+        raise ValueError(f"{len(prevouts)} outputs make a {tx.weight} WU transaction, over the {MAX_BLOCK_WEIGHT} WU "
+                         "consensus limit on a block; no transaction can sweep them all")
     fee = math.ceil(tx.vsize * feerate)
+    if fee > max_fee:
+        raise ValueError(f"the fee would be {fee} sat ({fee / 100_000_000:g} BTC), over the {max_fee} sat ceiling; "
+                         "check the fee rate, or raise the ceiling (--max-fee)")
     if amount is None:
         if total - fee < dust_threshold(dest_script_pubkey):
             raise ValueError(f"amount {total} sat does not cover a {fee} sat fee plus dust")
         tx.outputs = [(total - fee, dest_script_pubkey)]
     else:
         change = total - amount - fee
-        if amount < dust_threshold(dest_script_pubkey):
-            raise ValueError(f"a {amount} sat payment is under the {dust_threshold(dest_script_pubkey)} sat dust limit")
         if change < 0:
             raise ValueError(f"{total} sat does not cover a {amount} sat payment plus a {fee} sat fee")
         if change < dust_threshold(change_script_pubkey):

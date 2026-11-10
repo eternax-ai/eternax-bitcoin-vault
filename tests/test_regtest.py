@@ -40,6 +40,23 @@ def test_unlock_sweeps_every_deposit_at_the_address(node, tmp_path, capsys):
     assert node.rpc("scantxoutset", "start", [f"addr({address})"])["unspents"] == []
 
 
+def test_unlock_checks_listed_outputs_against_the_node(node, tmp_path, capsys):
+    seed = str(tmp_path / "vault.seed")
+    cli.main(["new", "--seed-file", seed])
+    cli.main(["lock", "--seed-file", seed, "--network", "regtest"])
+    address = capsys.readouterr().out.strip().splitlines()[-1]
+    funded = node.fund(address, 0.01)
+    unlock = ["unlock", "--seed-file", seed, "--network", "regtest", "--to", node.mine_addr, "--feerate", "2",
+              "--rpc-url", URL] + (["--rpc-cookie", COOKIE] if COOKIE else [])
+    with pytest.raises(SystemExit, match=f"holds {funded.amount} sat, not {funded.amount + 1000}"):
+        cli.main(unlock + ["--utxo", f"{funded.txid}:{funded.vout}:{funded.amount + 1000}"])
+    with pytest.raises(SystemExit, match="not a confirmed output"):              # the funding wallet's change
+        cli.main(unlock + ["--utxo", f"{funded.txid}:{funded.vout}", "--utxo", f"{funded.txid}:{1 - funded.vout}:5000"])
+    assert capsys.readouterr().out == ""
+    cli.main(unlock + ["--utxo", f"{funded.txid}:{funded.vout}:{funded.amount}"])
+    assert node.rpc("testmempoolaccept", [capsys.readouterr().out.strip()])[0]["allowed"]
+
+
 def test_unlock_pays_and_sends_the_change_to_a_fresh_vault(node, tmp_path, capsys):
     seed = str(tmp_path / "vault.seed")
     cli.main(["new", "--seed-file", seed])

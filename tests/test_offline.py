@@ -4,7 +4,7 @@ import math
 import coincurve
 import pytest
 
-from eternax_vault import network
+from eternax_vault import cli, network
 from eternax_vault.descriptor import checksum, vault_descriptor
 from eternax_vault.encoding import address_to_script_pubkey, p2wsh_address, segwit_decode, segwit_encode
 from eternax_vault.keys import new_mnemonic, pubkey, seed_from_mnemonic, sign_low_r, vault_secrets
@@ -197,6 +197,60 @@ def test_unlock_refuses_bad_payments_and_change():
         build_unlock(secrets, prevout, dest, feerate=1, amount=97_000, change_script_pubkey=change)
 
 
+def test_unlock_refuses_what_no_node_would_relay():
+    secrets = vault_secrets(SEED, REGTEST, 100, 0)
+    change = vault_script_pubkey(vault_secrets(SEED, REGTEST, 100, 1))
+    dest = b"\x00\x14" + b"\x01" * 20
+    prevout = [Outpoint("88" * 32, 0, 100_000)]
+    for feerate in (-1, 0, 0.05, math.inf, math.nan):                                 # outputs over inputs, or under the floor
+        with pytest.raises(ValueError, match="relay minimum"):
+            build_unlock(secrets, prevout, dest, feerate=feerate)
+    with pytest.raises(ValueError, match="payment is under"):
+        build_unlock(secrets, prevout, dest, feerate=1, amount=-5, change_script_pubkey=change)
+    tx = build_unlock(secrets, prevout, dest, feerate=0.1)
+    assert 100_000 - tx.outputs[0][0] >= math.ceil(tx.vsize * 0.1)
+
+
+@pytest.mark.parametrize("args", [["--feerate", "0"], ["--feerate", "-1"], ["--feerate", "0.05"], ["--feerate", "inf"],
+                                  ["--feerate", "nan"], ["--feerate", "1", "--amount", "-5", "--change-deposit", "1"],
+                                  ["--feerate", "1", "--deposit", "-1"],
+                                  ["--feerate", "1", "--amount", "5000", "--change-deposit", "-1"],
+                                  ["--feerate", "1", "--utxo", "88" * 32 + ":-1:100000"],
+                                  ["--feerate", "1", "--utxo", "88" * 32 + ":0:-5"]])
+def test_cli_refuses_bad_unlock_arguments_without_printing_a_transaction(tmp_path, capsys, args):
+    seed = str(tmp_path / "vault.seed")
+    cli.main(["new", "--seed-file", seed])
+    capsys.readouterr()
+    utxo = [] if "--utxo" in args else ["--utxo", "88" * 32 + ":0:100000"]
+    with pytest.raises(SystemExit):
+        cli.main(["unlock", "--seed-file", seed, "--network", "regtest",
+                  "--to", "bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080"] + utxo + args)
+    assert capsys.readouterr().out == ""
+
+
+def test_unlock_refuses_a_fee_over_the_ceiling_unless_raised():
+    secrets = vault_secrets(SEED, REGTEST, 100, 0)
+    dest = b"\x00\x14" + b"\x01" * 20
+    prevout = [Outpoint("aa" * 32, 0, 100_000_000)]
+    for feerate in (5_000, 20_000):                                                  # about 0.14 and 0.55 BTC
+        with pytest.raises(ValueError, match="over the 10000000 sat ceiling"):
+            build_unlock(secrets, prevout, dest, feerate=feerate)
+    tx = build_unlock(secrets, prevout, dest, feerate=5_000, max_fee=20_000_000)
+    assert 100_000_000 - tx.outputs[0][0] == math.ceil(tx.vsize * 5_000)
+
+
+def test_cli_fee_ceiling_and_its_override(tmp_path, capsys):
+    seed = str(tmp_path / "vault.seed")
+    cli.main(["new", "--seed-file", seed])
+    unlock = ["unlock", "--seed-file", seed, "--network", "regtest", "--to", "bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080",
+              "--utxo", "aa" * 32 + ":0:100000000", "--feerate", "5000"]
+    with pytest.raises(SystemExit, match="ceiling"):
+        cli.main(unlock)
+    capsys.readouterr()
+    cli.main(unlock + ["--max-fee", "20000000"])
+    assert len(bytes.fromhex(capsys.readouterr().out.strip())) > 7000                # the signed unlock
+
+
 def test_dust_limits_match_bitcoin_core():
     assert dust_threshold(b"\x00\x14" + b"\x01" * 20) == 294                       # P2WPKH
     assert dust_threshold(b"\x00\x20" + b"\x01" * 32) == 330                       # P2WSH
@@ -211,6 +265,13 @@ def test_unlock_refuses_nonstandard_unless_asked():
         build_unlock(secrets, [prevout], b"\x00\x14" + b"\x01" * 20, feerate=1)
     tx = build_unlock(secrets, [prevout], b"\x00\x14" + b"\x01" * 20, feerate=1, standard=False)
     assert len(tx.witnesses[0]) == 102
+
+
+def test_nonstandard_unlock_stays_under_the_block_weight_limit():
+    secrets = vault_secrets(SEED, REGTEST, 201, 0)
+    many = [Outpoint("99" * 32, i, 10**6) for i in range(188)]                      # 188 × 201 keys: about 4,075,000 WU
+    with pytest.raises(ValueError, match="consensus limit"):
+        build_unlock(secrets, many, b"\x00\x14" + b"\x01" * 20, feerate=1, standard=False)
 
 
 def test_descriptor_is_the_same_script():

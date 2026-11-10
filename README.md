@@ -96,7 +96,7 @@ eternax-vault unlock --seed-file vault.seed --network mainnet \
     --to <destination address> --feerate 5
 ```
 
-`unlock` prints the signed transaction. Broadcast it from your own node, or pass `--rpc-url http://user:pass@127.0.0.1:8332 --broadcast`. With `--rpc-url`, leave out `--utxo`: the tool asks the node for every confirmed output at the address and sweeps them all, and if you do list outputs, it refuses to leave any behind. The transaction signals replace-by-fee, and re-signing at a higher fee rate reveals nothing new: by then the keys are already in the mempool.
+`unlock` prints the signed transaction. Broadcast it from your own node, or pass `--rpc-url http://user:pass@127.0.0.1:8332 --broadcast`. With `--rpc-url`, leave out `--utxo`: the tool asks the node for every confirmed output at the address and sweeps them all, and if you do list outputs, it refuses to leave any behind and checks each one, with its amount, against the node. The transaction signals replace-by-fee, and re-signing at a higher fee rate reveals nothing new: by then the keys are already in the mempool. To catch a mistyped fee rate, `unlock` refuses a fee above 0.1 BTC, the default ceiling in Bitcoin Core's wallet; `--max-fee <sats>` raises it.
 
 To pay part of the balance, give the payment in satoshis and a fresh deposit index for the change. The same transaction still spends every output at the address; the rest, less the fee, goes to the vault at that index, derived from the same seed:
 
@@ -106,7 +106,7 @@ eternax-vault unlock --seed-file vault.seed --network mainnet \
     --to <payee address> --amount <sats> --change-deposit 1 --feerate 5
 ```
 
-The change output adds 43 vbytes. The tool refuses change sent back to the vault being spent, but it can't see whether the change index was spent before, and a spent vault's keys are public: use an index that has never been spent, and write it down with the 24 words.
+The change output adds 43 vbytes. The tool refuses change sent back to the vault being spent, but it can't see whether the change index was spent before: it keeps no record of past unlocks. A spent vault's keys are public, so change sent to one sits exposed at rest. Keep the deposit indices you have used on the paper with the 24 words, send the change to the next index above all of them, and add that index to the list.
 
 ### For meaningful amounts: let Bitcoin Core hold and spend
 
@@ -156,6 +156,7 @@ address     bc1q9av9cs3u4433y3jkp97frhd9tpyuf8rtccqnpqtjmzkerv9j0meshqvl4w   (ma
 - **Hardened is what makes one phrase safe.** An attacker who recovers one key's private half learns nothing about the parent or any sibling, so each key still costs its own discrete log.
 - **Never expose an extended public key for an ancestor of the vault path** (`m`, `m/17752'`, `m/17752'/coin'` or `m/17752'/coin'/slot'`). An xpub carries its chain code, and a quantum computer turns its public key into the private key; together they give every hardened key below it. The vault never needs one. Branches of the same seed outside `m/17752'` (a BIP-84 or BIP-86 account, say) are separate hardened subtrees and reveal nothing about the vault, but every wallet a phrase is loaded into is one more place it can leak, so use a dedicated phrase.
 - **The purpose is a dedicated `17752'` ("EX").** Vault nodes then never coincide with the account nodes standard wallets (BIP-44/49/84/86) export as xpubs. With purpose `86'`, vault slot s would be the very node a Taproot wallet exports as account s.
+- **Use one key count per seed.** Slot *i* is the same key whatever `--keys` is, so a 50-key vault at deposit 0 is the first 50 keys of the 100-key vault at deposit 0, and spending either one puts keys of the other on-chain. The test networks overlap the same way: they all use coin type `1'`, so deposit 0 on signet is deposit 0 on testnet4.
 - **Write the path down with the words.** `17752'` is this project's own purpose number, not a registered standard, so no wallet will guess it. On the same paper as the 24 words, write `m/17752'/0'/0..99'/deposit'` (mainnet), the deposit indices you used and the key count (100). With that, any BIP-32 library rebuilds the keys even without this repo.
 - **One backup for everything: BIP-85 (optional).** A hardware wallet that supports BIP-85 (Coldcard, for one) can derive the vault's 24 words from its own seed, as child phrase *i* at `m/83696968'/39'/0'/24'/i'`. A lost vault paper can then be regenerated on the device, and the child phrase can't be turned back into the master seed. The trade-offs:
   - whoever has the master seed has every vault too;
@@ -165,7 +166,7 @@ Add *i* to the paper with the path. This tool takes the child phrase like any ot
 
 ## Rules
 
-1. **Receive many times, spend once.** An address can take any number of payments, and its keys stay hidden until the first spend. That spend puts all 100 public keys on-chain, so `unlock` sweeps every output at the address together, and the address is then retired: anything sent to it later is exposed at rest. Unlock once every deposit has confirmed and no more are on the way. Use `--deposit 1`, `2`, … for new vaults.
+1. **Receive many times, spend once.** An address can take any number of payments, and its keys stay hidden until the first spend. That spend puts all 100 public keys on-chain, so `unlock` sweeps every output at the address together, and the address is then retired: anything sent to it later is exposed at rest. Unlock once every deposit has confirmed and no more are on the way: with `--rpc-url`, `unlock` sees only confirmed outputs, so a deposit still in the mempool is left out of the sweep and then confirms at a spent address. Use `--deposit 1`, `2`, … for new vaults.
 2. **Sweep everything.** `unlock` spends every output at the address, either all to one destination or as a payment with the change in a fresh vault (`--amount`, `--change-deposit`). Nothing stays at the spent address, and nothing goes back to it.
 3. **One vault per transaction.** Each input carries its own 100 signatures, about 2,700 vbytes, so one standard transaction sweeps up to 36 outputs. Don't mix vaults. It adds no work for an attacker, since stealing an input needs only its own vault's keys, and an attacker who breaks one vault could replace the whole transaction while the other vaults' keys sit in the mempool.
 4. **Keep the 24 words, the descriptor and the master xpub secret.** The address is a hash and safe to share; the public keys behind it are not, until you spend. That is the same rule as for any P2PKH or P2WPKH address under a quantum threat, applied to 100 keys. The master xpub sits above every vault, so to a quantum computer it is as good as the seed.

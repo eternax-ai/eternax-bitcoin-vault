@@ -23,7 +23,7 @@ from .keys import PURPOSE, new_mnemonic, pubkey, seed_from_mnemonic, vault_secre
 from .odds import attack_odds
 from .rpc import RPC
 from .script import MAX_CONSENSUS_KEYS, MAX_STANDARD_KEYS, chain_script, p2wsh_script_pubkey
-from .tx import Outpoint, build_unlock
+from .tx import MAX_FEE, Outpoint, build_unlock
 
 DEFAULT_KEYS = 100
 
@@ -85,12 +85,26 @@ def cmd_descriptor(args):
               "at rest the vault's protection is that nobody has seen them.", file=sys.stderr)
 
 
+def _index(text: str) -> int:
+    """A deposit index: one hardened BIP-32 level."""
+    try:
+        index = int(text)
+        if not 0 <= index < 2**31:
+            raise ValueError
+        return index
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected a deposit index from 0 to {2**31 - 1}, got {text!r}") from None
+
+
 def _utxo(text: str) -> tuple[str, int, int | None]:
     parts = text.split(":")
     try:
         if len(parts) not in (2, 3) or len(bytes.fromhex(parts[0])) != 32:
             raise ValueError
-        return parts[0].lower(), int(parts[1]), int(parts[2]) if len(parts) == 3 else None
+        vout, sats = int(parts[1]), int(parts[2]) if len(parts) == 3 else None
+        if not 0 <= vout < 2**32 or (sats is not None and sats <= 0):
+            raise ValueError
+        return parts[0].lower(), vout, sats
     except ValueError:
         raise argparse.ArgumentTypeError(f"expected TXID:VOUT or TXID:VOUT:SATS, got {text!r}") from None
 
@@ -114,10 +128,14 @@ def cmd_unlock(args):
             sys.exit(f"{address} also holds {missing}; list every output, or it is exposed once this unlock confirms")
         prevouts = []
         for txid, vout, sats in args.utxo:
-            if sats is None:
-                if on_chain is None or (txid, vout) not in on_chain:
-                    sys.exit(f"{txid}:{vout}: give the amount as TXID:VOUT:SATS, or a --rpc-url whose node has it confirmed")
+            if on_chain is not None:            # signatures over a wrong output or amount are invalid, yet expose the keys
+                if (txid, vout) not in on_chain:
+                    sys.exit(f"{txid}:{vout} is not a confirmed output at {address}")
+                if sats is not None and sats != on_chain[(txid, vout)]:
+                    sys.exit(f"{txid}:{vout} holds {on_chain[(txid, vout)]} sat, not {sats}")
                 sats = on_chain[(txid, vout)]
+            elif sats is None:
+                sys.exit(f"{txid}:{vout}: give the amount as TXID:VOUT:SATS, or a --rpc-url whose node has it confirmed")
             prevouts.append(Outpoint(txid, vout, sats))
     elif on_chain:
         prevouts = [Outpoint(t, v, sats) for (t, v), sats in sorted(on_chain.items())]
@@ -130,7 +148,8 @@ def cmd_unlock(args):
     t = time.perf_counter()
     try:
         tx = build_unlock(secrets, prevouts, address_to_script_pubkey(args.to, net), args.feerate,
-                          standard=not args.allow_nonstandard, amount=args.amount, change_script_pubkey=change_spk)
+                          standard=not args.allow_nonstandard, amount=args.amount, change_script_pubkey=change_spk,
+                          max_fee=args.max_fee)
     except ValueError as e:
         sys.exit(str(e))
     ms = (time.perf_counter() - t) * 1000
@@ -175,7 +194,7 @@ def main(argv=None):
         sp.add_argument("--seed-file", required=True)
         sp.add_argument("--network", required=True, choices=list(network.NETWORKS))
         sp.add_argument("--keys", type=int, default=DEFAULT_KEYS, help=f"keys in the script (default {DEFAULT_KEYS})")
-        sp.add_argument("--deposit", type=int, default=0, help="deposit index; use each index once")
+        sp.add_argument("--deposit", type=_index, default=0, help="deposit index; use each index once")
 
     sp = sub.add_parser("new", help="create a seed file")
     sp.add_argument("--seed-file", required=True)
@@ -194,15 +213,19 @@ def main(argv=None):
     vault_args(sp)
     sp.add_argument("--utxo", type=_utxo, action="append",
                     help="TXID:VOUT:SATS of an output at the vault address; repeat for each. With --rpc-url, SATS "
-                         "can be left out, and without --utxo every confirmed output at the address is swept")
+                         "can be left out, each output must match the node's, and without --utxo every confirmed "
+                         "output at the address is swept")
     sp.add_argument("--to", required=True, help="destination address")
     sp.add_argument("--amount", type=int,
                     help="satoshis to pay to --to; the rest, less the fee, goes to the vault at --change-deposit. "
                          "Without it, everything goes to --to")
-    sp.add_argument("--change-deposit", type=int,
+    sp.add_argument("--change-deposit", type=_index,
                     help="deposit index of the fresh vault, from the same seed, that takes the change; "
                          "use an index that has never been spent")
     sp.add_argument("--feerate", type=float, required=True, help="sat/vB")
+    sp.add_argument("--max-fee", type=int, default=MAX_FEE,
+                    help=f"refuse a fee above this many satoshis (default {MAX_FEE}, 0.1 BTC, as Bitcoin Core's "
+                         "-maxtxfee)")
     sp.add_argument("--rpc-url", help="Bitcoin Core RPC, e.g. http://user:pass@127.0.0.1:8332")
     sp.add_argument("--rpc-cookie", help="path to Bitcoin Core's .cookie file instead of URL credentials")
     sp.add_argument("--broadcast", action="store_true", help="check with testmempoolaccept, then send")
