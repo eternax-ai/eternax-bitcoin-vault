@@ -65,9 +65,11 @@ Bitcoin Core's own wallet, given the same descriptor, derives the same address a
 
 **Mainnet:** a 100-key vault [funded](https://mempool.space/tx/b77b3538628e78d7902ffaa4bb90106b3b9b342440e037b05d610993780d1085) and [unlocked](https://mempool.space/tx/397b3672fd908901906802fc02ab3307d43264ca72776329340a2173dc84220c) with 100 signatures in one standard transaction: 2,759 vB, a 2,759-sat fee, mined in block 973,546 by MARA Pool. Details in [RESULTS.md](RESULTS.md#mainnet).
 
-## Six properties are checked against Bitcoin Core
+## The vault script is formally verified
 
-[verification/](verification/) proves or checks six properties with Z3, independent re-implementations of the BIPs, and Bitcoin Core v31.1 as the reference: only all n signatures spend the vault, unlocks are valid and standard, the address commits to the script, the seed rebuilds every key, signatures bind the transaction, and an unlock never pays the vault it spends. The [report](verification/REPORT.md) gives the results and the three open findings, all low; the [spec](verification/SPEC.md) states each property and its assumptions. One command re-runs everything. No third party has reviewed it yet.
+For every key count the tool accepts, 1 to 201, Z3 proves that the vault script succeeds under segwit v0 rules and consensus limits if and only if the witness carries exactly n signatures and all n checks pass. Signature validity is left abstract, so the result assumes only that ECDSA can't be forged classically; SHA-256 keeps any other script from spending the address. Z3 also proves the unlock arithmetic: the fee covers at least the requested rate, and outputs plus fee equal inputs. That the real weight never exceeds the tool's estimate is proven for sample sizes up to 201 keys and 5 inputs, and tested on random unlocks of up to 40 inputs.
+
+The proofs are about models, not about Bitcoin Core's C++: script execution for the three opcodes the vault uses, and the unlock's arithmetic. The script model is checked against the real script bytes for every key count, and against Core v31.1, which rejects 32 malformed witnesses at consensus; 22 unlocks across 1–100 keys and 1–36 inputs were accepted and mined. Rerun everything with [verification/run_all.sh](verification/run_all.sh). The [report](verification/REPORT.md) has the results and the three open findings, all low.
 
 ## Quickstart
 
