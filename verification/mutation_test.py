@@ -40,6 +40,14 @@ MUTANTS = {
         ("script.py", "if len(set(pubkeys)) != len(pubkeys):", "if False:"),
     "M12 network coin type ignored (mainnet path on test networks)":
         ("keys.py", "{net.coin}h", "0h"),
+    "M13 relay-floor check removed (F1, F3)":
+        ("tx.py", "if not math.isfinite(feerate) or feerate < MIN_RELAY_FEERATE:", "if False:"),
+    "M14 fee ceiling removed (F7)":
+        ("tx.py", "if fee > max_fee:", "if False:"),
+    "M15 block-weight cap removed from non-standard unlocks (F5)":
+        ("tx.py", "if tx.weight > MAX_BLOCK_WEIGHT:", "if False:"),
+    "M16 typed amount no longer checked against the node (F9)":
+        ("cli.py", "if sats is not None and sats != on_chain[(txid, vout)]:", "if False:"),
 }
 
 

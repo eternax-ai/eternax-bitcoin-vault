@@ -12,9 +12,13 @@
         are refused (no silent aliasing); repeated derivation is identical
   P6.1  Hypothesis: build_unlock never creates an output paying the vault being spent
   P6.2  cmd_unlock refuses a partial sweep when the node shows more outputs at the address
+  P6.3  with node data, cmd_unlock refuses a typed amount that differs from the node's, and an outpoint the node
+        does not show at the vault, before signing anything (finding F9)
 """
+import contextlib
 import hashlib
 import hmac
+import io
 import os
 import random
 import sys
@@ -236,14 +240,18 @@ def p6_1():
         report("P6.1", False, repr(e)[:300])
 
 
-def p6_2():
-    """Drive cmd_unlock with a stub node that reports three outputs at the vault address."""
+STUB_OUTPUTS = {("aa" * 32, 0): 100_000, ("bb" * 32, 1): 200_000, ("cc" * 32, 2): 300_000}
+
+
+@contextlib.contextmanager
+def stub_node():
+    """cmd_unlock arguments for a 3-key vault, with cli.RPC replaced by a stub node that reports the three
+    STUB_OUTPUTS at the vault address."""
     import tempfile
     from mnemonic import Mnemonic
     phrase = Mnemonic("english").to_mnemonic(bytes(32))
     with tempfile.NamedTemporaryFile("w", suffix=".seed", delete=False) as f:
         f.write(phrase)
-    outs = {("aa" * 32, 0): 100_000, ("bb" * 32, 1): 200_000, ("cc" * 32, 2): 300_000}
 
     class StubRPC:
         def __init__(self, *a, **k):
@@ -251,34 +259,55 @@ def p6_2():
 
         def __call__(self, method, *params):
             assert method == "scantxoutset"
-            return {"unspents": [{"txid": t, "vout": v, "amount": s / 1e8} for (t, v), s in outs.items()]}
+            return {"unspents": [{"txid": t, "vout": v, "amount": s / 1e8} for (t, v), s in STUB_OUTPUTS.items()]}
     real = cli.RPC
     cli.RPC = StubRPC
     try:
-        base = ["unlock", "--seed-file", f.name, "--network", "regtest", "--keys", "3", "--to",
-                segwit_encode("bcrt", 0, bytes(20)), "--feerate", "1", "--rpc-url", "http://x:y@127.0.0.1:1"]
+        yield ["unlock", "--seed-file", f.name, "--network", "regtest", "--keys", "3", "--to",
+               segwit_encode("bcrt", 0, bytes(20)), "--feerate", "1", "--rpc-url", "http://x:y@127.0.0.1:1"]
+    finally:
+        cli.RPC = real
+        os.unlink(f.name)
+
+
+def p6_2():
+    """Drive cmd_unlock with a stub node that reports three outputs at the vault address."""
+    with stub_node() as base:
         try:
             cli.main(base + ["--utxo", f"{'aa' * 32}:0"])
             partial_refused = False
         except SystemExit as e:
             partial_refused = "also holds" in str(e)
-        import io
-        import contextlib
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(io.StringIO()):
             cli.main(base)                                   # no --utxo: sweeps everything the node reports
         raw = bytes.fromhex(buf.getvalue().strip())
         n_inputs = raw[6]                                    # version(4) + marker/flag(2) -> input count varint
         full_sweep = n_inputs == 3
-    finally:
-        cli.RPC = real
-        os.unlink(f.name)
     report("P6.2", partial_refused and full_sweep,
            f"cmd_unlock with node data: partial list refused ({partial_refused}); default sweeps all 3 outputs ({full_sweep})")
 
 
+def p6_3():
+    listed = [x for (t, v) in STUB_OUTPUTS for x in ("--utxo", f"{t}:{v}")]
+    cases = {"typed amount differs from the node's": (["--utxo", f"{'aa' * 32}:0:100001"] + listed[2:], "not 100001"),
+             "outpoint the node does not show": (listed + ["--utxo", f"{'dd' * 32}:3:50000"], "not a confirmed output")}
+    refused = {}
+    with stub_node() as base:
+        for label, (extra, expect) in cases.items():
+            out = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+                    cli.main(base + extra)
+                refused[label] = False
+            except SystemExit as e:
+                refused[label] = expect in str(e.code) and not out.getvalue()
+    report("P6.3", all(refused.values()), "cmd_unlock with node data refuses before signing: "
+           + "; ".join(f"{k} ({v})" for k, v in refused.items()))
+
+
 if __name__ == "__main__":
-    for fn in (p3_1, p3_2, p4_1, p4_2, p4_3, p4_4, p6_1, p6_2):
+    for fn in (p3_1, p3_2, p4_1, p4_2, p4_3, p4_4, p6_1, p6_2, p6_3):
         fn()
     bad = [k for k, v in results.items() if v is False]
     print("ALL PASS" if not bad else f"FAILED: {bad}")

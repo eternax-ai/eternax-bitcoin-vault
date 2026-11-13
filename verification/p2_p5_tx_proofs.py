@@ -9,9 +9,11 @@ the real Python to that model, then an independent BIP-143 implementation compar
   P2.4  Z3: paid fee / real vsize >= requested feerate, for every feerate > 0
   P2.5  Z3: sigop cost <= 16,000 (Core's standard limit) whenever weight <= 400,000, for n = 1..201
   P2.6  Z3: n <= 100 keeps every per-input policy limit (items, item size, script size)
+  P2.7  non-standard unlocks: the largest sweep under the 4,000,000 WU block weight is built, one more input is refused
   P5.1  Z3: value conservation and non-negative outputs >= dust, on both output shapes
   P5.2  Z3 counterexample: without feerate > 0 the conservation-with-positive-fee property fails
-  P5.3  Hypothesis: build_unlock agrees with the model (values, errors) on random inputs
+  P5.3  Hypothesis: build_unlock agrees with the model (values, errors) on random inputs, including fee rates
+        under the relay floor or non-finite, fees over the ceiling, and negative amounts
   P5.4  Hypothesis: tx.sighash == independent BIP-143 implementation, byte for byte
   P5.5  Hypothesis: changing any output, amount or outpoint changes every input's sighash
 """
@@ -26,8 +28,8 @@ from hypothesis import HealthCheck, example, given, settings, strategies as st
 
 from eternax_vault.keys import pubkey, sign_low_r, vault_secrets
 from eternax_vault.script import MAX_STANDARD_P2WSH_SCRIPT_SIZE, chain_script, limits, p2wsh_script_pubkey
-from eternax_vault.tx import (MAX_STANDARD_TX_WEIGHT, PLACEHOLDER_SIG, SEQUENCE_RBF, Outpoint, UnlockTx, build_unlock,
-                              dust_threshold)
+from eternax_vault.tx import (MAX_BLOCK_WEIGHT, MAX_FEE, MAX_STANDARD_TX_WEIGHT, MIN_RELAY_FEERATE, PLACEHOLDER_SIG,
+                              SEQUENCE_RBF, Outpoint, UnlockTx, build_unlock, dust_threshold)
 from eternax_vault import network
 
 NET = network.get("regtest")
@@ -181,6 +183,32 @@ def p2_6():
     report("P2.6", proved(s), "Z3: 1 <= n <= 100  =>  stack items, item size, script size, op count, stack depth all within limits")
 
 
+# ---------------------------------------------------------------- P2.7 consensus weight cap (finding F5)
+def p2_7():
+    n = 201
+    secrets = vault_secrets(bytes(range(64)), NET, n, 0)
+    ws = chain_script([pubkey(s) for s in secrets])
+    dest = bytes([0, 20]) + bytes(20)
+    est = lambda k: UnlockTx([Outpoint("00" * 32, i, 0) for i in range(k)], [(0, dest)],
+                             [[PLACEHOLDER_SIG] * n + [ws]] * k).weight
+    k = 1
+    while est(k + 1) <= MAX_BLOCK_WEIGHT:
+        k += 1
+    prev = lambda k: [Outpoint(f"{i:064x}", 0, 10 ** 6) for i in range(k)]
+    try:
+        largest = build_unlock(secrets, prev(k), dest, 1.0, standard=False)
+        built = largest.weight <= MAX_BLOCK_WEIGHT == 4_000_000
+    except ValueError:
+        built = False
+    try:
+        build_unlock(secrets, prev(k + 1), dest, 1.0, standard=False)
+        refused = False
+    except ValueError:
+        refused = True
+    report("P2.7", built and refused, f"standard=False, {n} keys: {k} inputs built within 4,000,000 WU ({built}), "
+                                      f"{k + 1} refused ({refused})")
+
+
 # ---------------------------------------------------------------- P5.1 / P5.2 value model
 def value_model(f_positive=True):
     T, fee, amt, dust_d, dust_c, out0, out1 = z3.Ints("T fee amount dust_d dust_c out0 out1")
@@ -216,7 +244,8 @@ def p5_2():
     if found:
         m = s.model()
         ex = f"e.g. feerate={m[f]}, inputs={m[T]}, output={m[out0]}, fee={m[fee]}"
-    report("P5.2", found, f"Z3 finds the expected counterexample when feerate <= 0 is allowed (finding F1): {ex}")
+    report("P5.2", found, f"Z3 finds the expected counterexample when feerate <= 0 is allowed (finding F1, which "
+                          f"build_unlock now refuses, see P5.3): {ex}")
 
 
 # ---------------------------------------------------------------- P5.3 build_unlock vs model
@@ -232,6 +261,8 @@ SPKS = [bytes([0, 20]) + bytes(20), bytes([0, 32]) + bytes(32), bytes([0x51, 32]
 
 def model_unlock(n, amounts, dest, feerate, amount, change):
     """Independent re-statement of the spec: returns ('ok', outputs) or ('err', None)."""
+    if not math.isfinite(feerate) or feerate < MIN_RELAY_FEERATE:      # nothing a node would not relay (F1, F3)
+        return "err", None
     k = len(amounts)
     outs_spk = [dest] if amount is None else [dest, change]
     est = weight_concrete(n, k, [len(x) for x in outs_spk], [[71] * n for _ in range(k)])
@@ -239,6 +270,8 @@ def model_unlock(n, amounts, dest, feerate, amount, change):
         return "err", None
     T = sum(amounts)
     fee = math.ceil(math.ceil(est / 4) * feerate)
+    if fee > MAX_FEE:                                                  # a mistyped fee rate (F7)
+        return "err", None
     dust = lambda spk: 3 * (8 + 1 + len(spk) + (67 if spk[0] in (0, *range(0x51, 0x61)) and spk[1] == len(spk) - 2 else 148))
     if amount is None:
         return ("ok", [T - fee]) if T - fee >= dust(dest) else ("err", None)
@@ -250,10 +283,13 @@ def model_unlock(n, amounts, dest, feerate, amount, change):
 
 @settings(max_examples=400, deadline=None, suppress_health_check=list(HealthCheck))
 @given(n=st.sampled_from([1, 2, 3, 20, 99, 100]), amounts=st.lists(st.integers(0, 5 * 10 ** 8), min_size=1, max_size=40),
-       dest=st.sampled_from(SPKS), feerate=st.one_of(st.floats(0.1, 300, allow_nan=False), st.floats(300, 50_000)),
+       dest=st.sampled_from(SPKS), feerate=st.one_of(st.floats(0.1, 300, allow_nan=False), st.floats(300, 50_000),
+                                                    st.sampled_from([-1.0, 0.0, 0.05, 0.0999, math.inf, math.nan])),
        amount=st.one_of(st.none(), st.integers(-10, 5 * 10 ** 8)))
 @example(n=3, amounts=[10 ** 6], dest=SPKS[0], feerate=2.0, amount=-5)
 @example(n=100, amounts=[10 ** 6] * 37, dest=SPKS[0], feerate=1.0, amount=None)
+@example(n=100, amounts=[10 ** 8], dest=SPKS[0], feerate=5000.0, amount=None)
+@example(n=3, amounts=[10 ** 6], dest=SPKS[0], feerate=0.05, amount=None)
 def _p5_3(n, amounts, dest, feerate, amount):
     prev = [Outpoint(f"{i:064x}", i % 3, a) for i, a in enumerate(amounts)]
     change = _CHANGE[n] if amount is not None else None
@@ -261,11 +297,7 @@ def _p5_3(n, amounts, dest, feerate, amount):
     try:
         tx = build_unlock(_SECRETS[n], prev, dest, feerate, amount=amount, change_script_pubkey=change)
         got = "ok"
-    except ValueError:
-        got = "err"
-    except OverflowError:                                # finding F3: negative amount crashes before signing
-        assert amount is not None and amount < 0
-        CRASHES.append(amount)
+    except ValueError:                                   # any other exception is a crash (F3) and fails the check
         got = "err"
     assert got == expect, (got, expect)
     if got == "ok":
@@ -288,15 +320,12 @@ def _p5_3(n, amounts, dest, feerate, amount):
                 assert sig[-1] == 1 and coincurve.PublicKey(key).verify(sig[:-1], digest, hasher=None)
 
 
-CRASHES = []
-
-
 def p5_3():
     try:
         _p5_3()
         report("P5.3", True, "Hypothesis, 400 cases: build_unlock == spec model (accept/refuse, every output value, "
-                             f"fee, weight formula, witness shape); negative amounts crash before signing "
-                             f"(OverflowError, no tx): {len(CRASHES)} cases")
+                             "fee, weight formula, witness shape); fee rates under 0.1 sat/vB or non-finite, fees over "
+                             "0.1 BTC and negative amounts refused with ValueError, no crash")
     except Exception as e:
         report("P5.3", False, repr(e)[:300])
 
@@ -385,7 +414,7 @@ def p5_5():
 
 
 if __name__ == "__main__":
-    for fn in (p2_1, p2_2, p2_3, p2_4, p2_5, p2_6, p5_1, p5_2, p5_3, p5_4, p5_5):
+    for fn in (p2_1, p2_2, p2_3, p2_4, p2_5, p2_6, p2_7, p5_1, p5_2, p5_3, p5_4, p5_5):
         fn()
     bad = [k for k, v in results.items() if not v]
     print("ALL PASS" if not bad else f"FAILED: {bad}")
