@@ -50,7 +50,7 @@
    },
    "--utxo with vout -1": {
     "refused": true,
-    "message": "eternax-vault unlock: error: argument --utxo: expected TXID:VOUT or TXID:VOUT:SATS, got '812ec54e040",
+    "message": "eternax-vault unlock: error: argument --utxo: expected TXID:VOUT or TXID:VOUT:SATS, got 'ee30cbd72e9",
     "crash": null
    },
    "--deposit -1": {
@@ -61,7 +61,7 @@
   },
   "F4": {
    "unlock_exit": 0,
-   "late_deposit_txid": "b891a5effe51298652b48c6be9bf18ead5e94dbf49046155456ab2970fd47442",
+   "late_deposit_txid": "ddd1f5b254e96ebfa4153675a537d30eb7f00b6923714fdf0a79e878044c06c7",
    "left_at_spent_vault_sats": 2000000,
    "outputs_left": 1
   },
@@ -69,7 +69,7 @@
    "keys": 201,
    "largest_built": {
     "inputs": 184,
-    "weight": 3988071
+    "weight": 3988070
    },
    "one_more": {
     "inputs": 185,
@@ -98,12 +98,12 @@
   },
   "F8": {
    "P2SH-P2WSH of the vault's own script": {
-    "address": "2N9ygSgLtynxS5Fpkdtq1MWzqG1euCnUTxG",
+    "address": "2NDNcZNvkpPx2ocA69dpJVbPX4UkHq6du7x",
     "tool": "accepted",
     "core_validateaddress": true
    },
    "P2WPKH of one of the vault's keys": {
-    "address": "bcrt1qm9e7eqqa26rfgrykf6qjca6y7nyu9h9dqhq380",
+    "address": "bcrt1qlmpj5fxr3unacnu9u4n2v75879zh37gp9e4cw5",
     "tool": "accepted",
     "core_validateaddress": true
    },
@@ -116,7 +116,7 @@
   "F9": {
    "amount 1,000 sat above the node's": {
     "refused": true,
-    "message": "ee395fc8ded6365208c42987b1b23a55937ce432a455d156e7bccfdfe54360a4:0 holds 1000000 sat, not 1001000"
+    "message": "b8381d51febd0be9334787c67bdfe95b64447bacd8c848c9e5c20f6d4a9f5c1c:1 holds 1000000 sat, not 1001000"
    },
    "an outpoint the node does not show": {
     "refused": true,

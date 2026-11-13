@@ -5,7 +5,7 @@ EternaX Labs · 13 November 2026
 | | |
 | --- | --- |
 | Code verified | `eternax_vault` at commit [`0e624ed`](https://github.com/eternax-ai/eternax-bitcoin-vault/commit/0e624eddec13d159222697ad00bd524f31ca514c) (`main`, 10 Nov 2026) |
-| Reference node | Bitcoin Core v31.1, unmodified, on a fresh regtest node |
+| Reference node | Bitcoin Core v31.1, the signed bitcoincore.org release (hash and 11 of 11 builder signatures checked), on a fresh regtest node |
 | Properties | P1–P6 from [SPEC.md](SPEC.md): all six hold; P2, P4 and P6 with stated limits |
 | Findings | 3 open, all low. On an earlier commit, 5 more were found and fixed before publication, and 1 was accepted as a design limit |
 | Checks on the checks | 9 of 9 negative controls caught; mutation score 16 of 16; internal adversarial review |
@@ -87,10 +87,13 @@ reference. The checks were then tested themselves.
   the top-level lock.
 - Z3 5.3.3 (`z3-solver` 5.3.3.0) for proofs, Hypothesis 6.168.5 for property-based tests, and `ecdsa`
   0.19.2 for an independent secp256k1.
-- Bitcoin Core v31.1 for arm64 macOS, from Homebrew (bottle `31.1_1`), on a fresh regtest node with
-  default policy: 0.1 sat/vB minimum relay fee and 3 sat/vB dust relay fee. The `ccb2603` run used the
-  bitcoincore.org release, whose SHA-256 matched `SHA256SUMS` and whose `SHA256SUMS` carried 11 of
-  11 builder signatures, checked against the keys in `bitcoin-core/guix.sigs`.
+- Bitcoin Core v31.1 for arm64 macOS, `bitcoin-31.1-arm64-apple-darwin.tar.gz` from
+  [bitcoincore.org](https://bitcoincore.org/bin/bitcoin-core-31.1/). The tarball's SHA-256 matched
+  `SHA256SUMS`, and all 11 detached signatures on `SHA256SUMS` verified against the builder keys in
+  [bitcoin-core/guix.sigs](https://github.com/bitcoin-core/guix.sigs/tree/main/builder-keys), with
+  both `gpg` and [`verify_sigs.py`](verify_sigs.py). The `bitcoind` binary's SHA-256 is
+  `d55c12b0b02001cc16b1481c4075361dcba193100a8143924abda911174c09ec`. It ran unmodified on a fresh
+  regtest node with default policy: 0.1 sat/vB minimum relay fee and 3 sat/vB dust relay fee.
 
 **Methods**
 
@@ -167,7 +170,7 @@ From the repository root, with a Bitcoin Core regtest node running (commands in
 PY=.venv/bin/python ./verification/run_all.sh
 ```
 
-It exits non-zero on any failure. This run ended with `ALL VERIFICATION STEPS PASSED` after 17.5
+It exits non-zero on any failure. This run ended with `ALL VERIFICATION STEPS PASSED` after 18.5
 minutes. Raw outputs are in [results/run_all.log](results/run_all.log),
 [results/core_differential.json](results/core_differential.json) and
 [results/findings_repro.json](results/findings_repro.json).
