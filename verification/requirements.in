@@ -1,0 +1,8 @@
+# Everything the verification suite runs with: the vault's own pinned dependencies plus the tools.
+# Tool versions are the ones the ccb2603 run used, where the report names them.
+-r ../requirements.lock
+z3-solver==5.3.3.0
+hypothesis==6.168.5
+ecdsa==0.19.2
+pytest
+pgpy
