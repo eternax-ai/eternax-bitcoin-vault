@@ -186,7 +186,7 @@
   },
   "202": {
    "consensus_valid": false,
-   "consensus_error": "6a92c4b7b91288c7d51b4433e88db2cddcc63e8bb681e395059c0efdb7:0",
+   "consensus_error": "55904797bf787b1a861d5721dbfdbfc12a0a64fb2cc7fa82535be32df6:0",
    "mempool_reason": "bad-witness-nonstandard"
   }
  },
@@ -336,7 +336,7 @@
     "reason": "",
     "core_vsize": 1773,
     "tool_vsize": 1773,
-    "tool_weight": 7090,
+    "tool_weight": 7089,
     "estimate_weight": 7090,
     "fee": 3546,
     "paid_rate": 2.0,
@@ -351,7 +351,7 @@
     "reason": "",
     "core_vsize": 2732,
     "tool_vsize": 2732,
-    "tool_weight": 10926,
+    "tool_weight": 10927,
     "estimate_weight": 10927,
     "fee": 5464,
     "paid_rate": 2.0,
@@ -366,7 +366,7 @@
     "reason": "",
     "core_vsize": 8112,
     "tool_vsize": 8112,
-    "tool_weight": 32445,
+    "tool_weight": 32446,
     "estimate_weight": 32449,
     "fee": 16226,
     "paid_rate": 2.000247,
@@ -381,7 +381,7 @@
     "reason": "",
     "core_vsize": 2759,
     "tool_vsize": 2759,
-    "tool_weight": 11033,
+    "tool_weight": 11034,
     "estimate_weight": 11034,
     "fee": 5518,
     "paid_rate": 2.0,
@@ -394,12 +394,12 @@
     "pay+change": false,
     "accepted": true,
     "reason": "",
-    "core_vsize": 8193,
-    "tool_vsize": 8193,
-    "tool_weight": 32770,
+    "core_vsize": 8192,
+    "tool_vsize": 8192,
+    "tool_weight": 32766,
     "estimate_weight": 32770,
     "fee": 16386,
-    "paid_rate": 2.0,
+    "paid_rate": 2.000244,
     "mined": true
    },
    {
@@ -426,7 +426,7 @@
     "reason": "",
     "core_vsize": 2759,
     "tool_vsize": 2759,
-    "tool_weight": 11034,
+    "tool_weight": 11033,
     "estimate_weight": 11034,
     "fee": 2759,
     "paid_rate": 1.0,
@@ -469,12 +469,12 @@
     "pay+change": false,
     "accepted": true,
     "reason": "",
-    "core_vsize": 2759,
-    "tool_vsize": 2759,
-    "tool_weight": 11034,
+    "core_vsize": 2758,
+    "tool_vsize": 2758,
+    "tool_weight": 11032,
     "estimate_weight": 11034,
     "fee": 1379500,
-    "paid_rate": 500.0,
+    "paid_rate": 500.181291,
     "mined": true
    },
    {
@@ -501,7 +501,7 @@
     "reason": "",
     "core_vsize": 5519,
     "tool_vsize": 5519,
-    "tool_weight": 22073,
+    "tool_weight": 22074,
     "estimate_weight": 22074,
     "fee": 11038,
     "paid_rate": 2.0,
@@ -514,12 +514,12 @@
     "pay+change": false,
     "accepted": true,
     "reason": "",
-    "core_vsize": 97850,
-    "tool_vsize": 97850,
-    "tool_weight": 391399,
+    "core_vsize": 97848,
+    "tool_vsize": 97848,
+    "tool_weight": 391391,
     "estimate_weight": 391414,
     "fee": 97854,
-    "paid_rate": 1.000041,
+    "paid_rate": 1.000061,
     "mined": true
    }
   ],
@@ -602,7 +602,7 @@
   "core_wallet_spend": {
    "import": true,
    "mined": true,
-   "txid": "6922d3efaaad4096bbc80ce1cb562001a7b774baea3121db42319f068be18499"
+   "txid": "dd0e443b95695f5868ee031ebb98642da83967e9b805f54c553d3bc7d6c25f94"
   }
  },
  "P5_addresses": {
