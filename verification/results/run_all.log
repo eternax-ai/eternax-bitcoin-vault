@@ -1,0 +1,142 @@
+== repo's own tests (offline + regtest)
+............................                                             [100%]
+28 passed in 5.63s
+== P1 script soundness (Z3)
+Part A: Z3 soundness + completeness for n=1..201: PROVEN
+Part B: chain_script bytes == modelled program for n=1..201; duplicate, uncompressed, short and empty key lists refused: OK
+Part C: mutant checksig_instead_of_verify   n=  2: counterexample found (expected)
+Part C: mutant checksig_instead_of_verify   n=  3: counterexample found (expected)
+Part C: mutant checksig_instead_of_verify   n=100: counterexample found (expected)
+Part C: mutant no_clean_stack               n=  2: counterexample found (expected)
+Part C: mutant no_clean_stack               n=  3: counterexample found (expected)
+Part C: mutant no_clean_stack               n=100: counterexample found (expected)
+Part C: n=202: honest spend impossible under consensus limits (expected)
+Part C: n=203: honest spend impossible under consensus limits (expected)
+Part C: n=250: honest spend impossible under consensus limits (expected)
+Part C: negative controls: OK
+== P2/P5 transaction proofs
+P2.1   PASS  limits(n) matches Core's standard (n<=100) and consensus (n<=201) rules for n=1..1000
+P2.2   PASS  20000 signatures: all strict DER, low-R, low-S; longest 71 B incl. sighash; bound 6+32+32+1 = 71 = placeholder
+P2.3   PASS  Z3: real weight <= placeholder-estimate weight for n in {1,2,7,8,20,100,201}, k in {1,2,5}
+P2.4   PASS  Z3: fee = ceil(vsize_est*f) and vsize <= vsize_est  =>  fee/vsize >= f (exact arithmetic)
+P2.4f  PASS  float check, 200,000 cases: max under-payment vs exact product 2.27e-09 sat
+P2.5   PASS  Z3: weight <= 400,000 WU  =>  sigop cost n*k <= 16,000, for every n = 1..201
+P2.6   PASS  Z3: 1 <= n <= 100  =>  stack items, item size, script size, op count, stack depth all within limits
+P5.1   PASS  Z3: accepted unlock => outputs + fee == inputs, outputs >= dust >= 0, fee >= 1 sat (feerate > 0)
+P5.2   PASS  Z3 finds the expected counterexample when feerate <= 0 is allowed (finding F1): e.g. feerate=-1, inputs=100000, output=100001, fee=-1
+P5.3   PASS  Hypothesis, 400 cases: build_unlock == spec model (accept/refuse, every output value, fee, weight formula, witness shape); negative amounts crash before signing (OverflowError, no tx): 2 cases
+P5.4   PASS  Hypothesis, 500 txs (1-6 inputs, 1-3 outputs, n in {1,3,20,100}): tx.sighash == independent BIP-143
+P5.5   PASS  Hypothesis, 300 txs: changing an output value/script, adding an output, or the spent amount changes the sighash
+ALL PASS
+== P3/P4/P6 checks
+P3.1   PASS  exhaustive n=1..201: independent compile(descriptor) == chain_script bytes; SPK = OP_0 <SHA256(WS)>
+P3.2   PASS  n=1..201 on mainnet, regtest, signet: decode(p2wsh_address(WS)) == SPK
+P4.1   PASS  BIP-39 Trezor vector (passphrase TREZOR) == tool == stdlib PBKDF2
+P4.2   PASS  892 keys: independent BIP-32 == vault_secrets (seeds 16/32/64 B, all networks, deposit up to 2^31-1)
+P4.3   PASS  40 random (seed, slot, deposit): Bitcoin Core's BIP-32 derivation == vault_secrets
+P4.4   PASS  paths injective (decimal round trip); deposit >= 2^31 or < 0 refused (4/4); deterministic; mainnet coin 0' vs test networks 1'
+P6.1   PASS  Hypothesis, 300 cases: no unlock ever pays the vault being spent (as destination or change)
+P6.2   PASS  cmd_unlock with node data: partial list refused (True); default sweeps all 3 outputs (True)
+ALL PASS
+== Bitcoin Core differential
+P1 n=3: 16 mutations, all rejected: True; honest accepted: True
+P1 n=100: 16 mutations, all rejected: True; honest accepted: True
+P1 boundary: {101: (True, 'bad-witness-nonstandard'), 201: (True, 'bad-witness-nonstandard'), 202: (False, 'bad-witness-nonstandard')}
+P2: max 100-key sweep = 36 inputs (accepted by Core), 37 refused by the tool: True
+P2/P5: 22 unlocks, accepted+mined: 22
+P3: 9 key counts all match Core: True; Core wallet spent 100-key vault from descriptor alone: True
+P5: address decoding vs Core: 3000/3000 agree
+ALL CORE DIFFERENTIAL CHECKS PASSED
+== Findings reproduction
+F1 {
+ "-1": {
+  "tool_exit": 0,
+  "signed_tx_printed": true,
+  "tx_bytes": 10787,
+  "core_verdict": "bad-txns-in-belowout",
+  "with_broadcast": "node refuses it: bad-txns-in-belowout"
+ },
+ "0": {
+  "tool_exit": 0,
+  "signed_tx_printed": true,
+  "tx_bytes": 10788,
+  "core_verdict": "min relay fee not met",
+  "with_broadcast": "node refuses it: min relay fee not met"
+ },
+ "0.05": {
+  "tool_exit": 0,
+  "signed_tx_printed": true,
+  "tx_bytes": 10787,
+  "core_verdict": "min relay fee not met",
+  "with_broadcast": "node refuses it: min relay fee not met"
+ }
+}
+F2 {
+ "vault1_spent_first": true,
+ "unlock0_exit": 0,
+ "change_sent_to_spent_vault": true,
+ "sats_now_at_exposed_vault": 894396,
+ "tool_warning": [
+  "# WRITE DOWN WITH THE 24 WORDS: THE CHANGE IS IN DEPOSIT 1, PATH m/17752'/1'/0..99'/1'. IT MUST BE A DEPOSIT THAT HAS NEVER BEEN SPENT: A SPENT VAULT'S KEYS ARE PUBLIC."
+ ]
+}
+F3 {'exit': "OverflowError: can't convert negative int to unsigned"}
+F4 {
+ "unlock_exit": 0,
+ "late_deposit_txid": "9b8cdb3cd93296190167d7a271964b8298ee2e0099496855024cfb7b51b4ebca",
+ "left_at_spent_vault_sats": 2000000,
+ "outputs_left": 1
+}
+F5 {'inputs': 188, 'weight': 4074766, 'built_anyway': True}
+F6 {'keys50_equal_first50_of_keys100': True, 'regtest_keys_equal_signet_keys': True}
+F7 {
+ "tool_exit": 0,
+ "fee_sats": null,
+ "core_verdict": "max-fee-exceeded",
+ "with_broadcast": "node refuses it: max-fee-exceeded",
+ "fee_line": [
+  "# 2759 vB, 11034 WU, fee 55180000 sat (20000.00 sat/vB), 100 signatures in 9 ms"
+ ]
+}
+F8 {
+ "P2SH-P2WSH of the vault's own script": {
+  "address": "2MtrZdG9jHzRj18bYBwLwuKT48rT7iLyuFo",
+  "tool": "accepted",
+  "core_validateaddress": true
+ },
+ "P2WPKH of one of the vault's keys": {
+  "address": "bcrt1qyrhylm5duwxnwnye74pl7x2asmqqxqmhtj20jc",
+  "tool": "accepted",
+  "core_validateaddress": true
+ },
+ "witness v1 with a 20-byte program (anyone can spend)": {
+  "address": "bcrt1pqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqn5md8r",
+  "tool": "accepted",
+  "core_validateaddress": true
+ }
+}
+F9 {
+ "wrong_user_amount_signed": true,
+ "core_verdict": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)",
+ "crashes": {
+  "--feerate inf": "OverflowError: cannot convert float infinity to integer",
+  "--feerate 2 --utxo e1a3f9bf08a8bbb77db20": "bcrt1qwpcz0re3fdfdulyge2na36dtwhzep4p2hppl0wg4r4p2k8q5je8s48xll0 also "
+ }
+}
+== Mutation testing of this suite
+unmodified code: PASS
+M1 script: every check is CHECKSIG (no VERIFY)                 CAUGHT by p1:FAIL, p3:P3.1
+M2 sighash: spent amount left out of the preimage              CAUGHT by p2:P5.3
+M3 fee rounded down instead of up                              CAUGHT by p2:P5.3
+M4 guard against paying the spent vault removed                CAUGHT by p3:P6.1
+M5 placeholder signature one byte short (fee under-estimate)   CAUGHT by p2:P2.2
+M6 slot level not hardened                                     CAUGHT by p3:P4.2
+M7 descriptor lists keys in reverse order                      CAUGHT by p3:P3.1
+M8 witness signatures not reversed                             CAUGHT by p2:P5.3
+M9 change left at the vault: fee taken twice                   CAUGHT by p2:P5.3
+M10 partial-sweep check removed from the CLI                   CAUGHT by p3:P6.2
+M11 duplicate-key check removed                                CAUGHT by p1:FAIL
+M12 network coin type ignored (mainnet path on test networks)  CAUGHT by p3:P4.2
+mutation score: 12/12
+ALL VERIFICATION STEPS PASSED
+exit=0

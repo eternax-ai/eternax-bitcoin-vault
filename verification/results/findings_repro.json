@@ -1,0 +1,86 @@
+{
+ "F1": {
+  "-1": {
+   "tool_exit": 0,
+   "signed_tx_printed": true,
+   "tx_bytes": 10787,
+   "core_verdict": "bad-txns-in-belowout",
+   "with_broadcast": "node refuses it: bad-txns-in-belowout"
+  },
+  "0": {
+   "tool_exit": 0,
+   "signed_tx_printed": true,
+   "tx_bytes": 10788,
+   "core_verdict": "min relay fee not met",
+   "with_broadcast": "node refuses it: min relay fee not met"
+  },
+  "0.05": {
+   "tool_exit": 0,
+   "signed_tx_printed": true,
+   "tx_bytes": 10787,
+   "core_verdict": "min relay fee not met",
+   "with_broadcast": "node refuses it: min relay fee not met"
+  }
+ },
+ "F2": {
+  "vault1_spent_first": true,
+  "unlock0_exit": 0,
+  "change_sent_to_spent_vault": true,
+  "sats_now_at_exposed_vault": 894396,
+  "tool_warning": [
+   "# WRITE DOWN WITH THE 24 WORDS: THE CHANGE IS IN DEPOSIT 1, PATH m/17752'/1'/0..99'/1'. IT MUST BE A DEPOSIT THAT HAS NEVER BEEN SPENT: A SPENT VAULT'S KEYS ARE PUBLIC."
+  ]
+ },
+ "F3": {
+  "exit": "OverflowError: can't convert negative int to unsigned"
+ },
+ "F4": {
+  "unlock_exit": 0,
+  "late_deposit_txid": "9b8cdb3cd93296190167d7a271964b8298ee2e0099496855024cfb7b51b4ebca",
+  "left_at_spent_vault_sats": 2000000,
+  "outputs_left": 1
+ },
+ "F5": {
+  "inputs": 188,
+  "weight": 4074766,
+  "built_anyway": true
+ },
+ "F6": {
+  "keys50_equal_first50_of_keys100": true,
+  "regtest_keys_equal_signet_keys": true
+ },
+ "F7": {
+  "tool_exit": 0,
+  "fee_sats": null,
+  "core_verdict": "max-fee-exceeded",
+  "with_broadcast": "node refuses it: max-fee-exceeded",
+  "fee_line": [
+   "# 2759 vB, 11034 WU, fee 55180000 sat (20000.00 sat/vB), 100 signatures in 9 ms"
+  ]
+ },
+ "F8": {
+  "P2SH-P2WSH of the vault's own script": {
+   "address": "2MtrZdG9jHzRj18bYBwLwuKT48rT7iLyuFo",
+   "tool": "accepted",
+   "core_validateaddress": true
+  },
+  "P2WPKH of one of the vault's keys": {
+   "address": "bcrt1qyrhylm5duwxnwnye74pl7x2asmqqxqmhtj20jc",
+   "tool": "accepted",
+   "core_validateaddress": true
+  },
+  "witness v1 with a 20-byte program (anyone can spend)": {
+   "address": "bcrt1pqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqn5md8r",
+   "tool": "accepted",
+   "core_validateaddress": true
+  }
+ },
+ "F9": {
+  "wrong_user_amount_signed": true,
+  "core_verdict": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)",
+  "crashes": {
+   "--feerate inf": "OverflowError: cannot convert float infinity to integer",
+   "--feerate 2 --utxo e1a3f9bf08a8bbb77db20": "bcrt1qwpcz0re3fdfdulyge2na36dtwhzep4p2hppl0wg4r4p2k8q5je8s48xll0 also "
+  }
+ }
+}

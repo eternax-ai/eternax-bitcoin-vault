@@ -1,0 +1,616 @@
+{
+ "P1": {
+  "3": {
+   "drop sig_0 (top)": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "drop middle sig": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "drop sig_{n-1} (bottom)": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Operation not valid with the current stack size)"
+   },
+   "swap two adjacent sigs": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "reverse all sigs": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "duplicate one sig over another": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "sig by a wrong key": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "sig over a different tx": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "empty sig (NULLFAIL)": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Script failed an OP_CHECKSIGVERIFY operation)"
+   },
+   "extra item at bottom": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Stack size must be exactly one after execution)"
+   },
+   "extra valid-looking sig": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Stack size must be exactly one after execution)"
+   },
+   "sighash byte -> NONE": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "sighash byte -> ALL|ANYONECANPAY": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "witness script of other keys": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Witness program hash mismatch)"
+   },
+   "witness script truncated by one key": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Witness program hash mismatch)"
+   },
+   "no witness at all": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Witness program was passed an empty witness)"
+   },
+   "honest witness": {
+    "consensus_ok": true,
+    "mempool_ok": true
+   }
+  },
+  "100": {
+   "drop sig_0 (top)": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "drop middle sig": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "drop sig_{n-1} (bottom)": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Operation not valid with the current stack size)"
+   },
+   "swap two adjacent sigs": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "reverse all sigs": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "duplicate one sig over another": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "sig by a wrong key": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "sig over a different tx": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "empty sig (NULLFAIL)": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Script failed an OP_CHECKSIGVERIFY operation)"
+   },
+   "extra item at bottom": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "bad-witness-nonstandard"
+   },
+   "extra valid-looking sig": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "bad-witness-nonstandard"
+   },
+   "sighash byte -> NONE": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "sighash byte -> ALL|ANYONECANPAY": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Signature must be zero for failed CHECK(MULTI)SIG operation)"
+   },
+   "witness script of other keys": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Witness program hash mismatch)"
+   },
+   "witness script truncated by one key": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Witness program hash mismatch)"
+   },
+   "no witness at all": {
+    "consensus_rejected": true,
+    "mempool_rejected": true,
+    "reason": "mempool-script-verify-flag-failed (Witness program was passed an empty witness)"
+   },
+   "honest witness": {
+    "consensus_ok": true,
+    "mempool_ok": true
+   }
+  }
+ },
+ "P1_boundary": {
+  "101": {
+   "consensus_valid": true,
+   "consensus_error": "",
+   "mempool_reason": "bad-witness-nonstandard"
+  },
+  "201": {
+   "consensus_valid": true,
+   "consensus_error": "",
+   "mempool_reason": "bad-witness-nonstandard"
+  },
+  "202": {
+   "consensus_valid": false,
+   "consensus_error": "6a92c4b7b91288c7d51b4433e88db2cddcc63e8bb681e395059c0efdb7:0",
+   "mempool_reason": "bad-witness-nonstandard"
+  }
+ },
+ "P2": {
+  "cases": [
+   {
+    "keys": 1,
+    "inputs": 1,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 110,
+    "tool_vsize": 110,
+    "tool_weight": 439,
+    "estimate_weight": 439,
+    "fee": 220,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 1,
+    "inputs": 3,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 247,
+    "tool_vsize": 247,
+    "tool_weight": 985,
+    "estimate_weight": 985,
+    "fee": 494,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 2,
+    "inputs": 1,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 137,
+    "tool_vsize": 137,
+    "tool_weight": 546,
+    "estimate_weight": 546,
+    "fee": 274,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 2,
+    "inputs": 3,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 327,
+    "tool_vsize": 327,
+    "tool_weight": 1306,
+    "estimate_weight": 1306,
+    "fee": 654,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 7,
+    "inputs": 1,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 271,
+    "tool_vsize": 271,
+    "tool_weight": 1081,
+    "estimate_weight": 1081,
+    "fee": 542,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 7,
+    "inputs": 3,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 728,
+    "tool_vsize": 728,
+    "tool_weight": 2911,
+    "estimate_weight": 2911,
+    "fee": 1456,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 8,
+    "inputs": 1,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 298,
+    "tool_vsize": 298,
+    "tool_weight": 1190,
+    "estimate_weight": 1190,
+    "fee": 596,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 8,
+    "inputs": 3,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 810,
+    "tool_vsize": 810,
+    "tool_weight": 3238,
+    "estimate_weight": 3238,
+    "fee": 1620,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 20,
+    "inputs": 1,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 619,
+    "tool_vsize": 619,
+    "tool_weight": 2474,
+    "estimate_weight": 2474,
+    "fee": 1238,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 20,
+    "inputs": 3,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 1773,
+    "tool_vsize": 1773,
+    "tool_weight": 7090,
+    "estimate_weight": 7090,
+    "fee": 3546,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 99,
+    "inputs": 1,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 2732,
+    "tool_vsize": 2732,
+    "tool_weight": 10926,
+    "estimate_weight": 10927,
+    "fee": 5464,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 99,
+    "inputs": 3,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 8112,
+    "tool_vsize": 8112,
+    "tool_weight": 32445,
+    "estimate_weight": 32449,
+    "fee": 16226,
+    "paid_rate": 2.000247,
+    "mined": true
+   },
+   {
+    "keys": 100,
+    "inputs": 1,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 2759,
+    "tool_vsize": 2759,
+    "tool_weight": 11033,
+    "estimate_weight": 11034,
+    "fee": 5518,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 100,
+    "inputs": 3,
+    "feerate": 2.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 8193,
+    "tool_vsize": 8193,
+    "tool_weight": 32770,
+    "estimate_weight": 32770,
+    "fee": 16386,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 100,
+    "inputs": 1,
+    "feerate": 0.1,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 2759,
+    "tool_vsize": 2759,
+    "tool_weight": 11033,
+    "estimate_weight": 11034,
+    "fee": 276,
+    "paid_rate": 0.100036,
+    "mined": true
+   },
+   {
+    "keys": 100,
+    "inputs": 1,
+    "feerate": 1.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 2759,
+    "tool_vsize": 2759,
+    "tool_weight": 11034,
+    "estimate_weight": 11034,
+    "fee": 2759,
+    "paid_rate": 1.0,
+    "mined": true
+   },
+   {
+    "keys": 100,
+    "inputs": 1,
+    "feerate": 3.7,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 2759,
+    "tool_vsize": 2759,
+    "tool_weight": 11034,
+    "estimate_weight": 11034,
+    "fee": 10209,
+    "paid_rate": 3.700254,
+    "mined": true
+   },
+   {
+    "keys": 100,
+    "inputs": 1,
+    "feerate": 25.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 2758,
+    "tool_vsize": 2758,
+    "tool_weight": 11032,
+    "estimate_weight": 11034,
+    "fee": 68975,
+    "paid_rate": 25.009065,
+    "mined": true
+   },
+   {
+    "keys": 100,
+    "inputs": 1,
+    "feerate": 500.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 2759,
+    "tool_vsize": 2759,
+    "tool_weight": 11034,
+    "estimate_weight": 11034,
+    "fee": 1379500,
+    "paid_rate": 500.0,
+    "mined": true
+   },
+   {
+    "keys": 1,
+    "inputs": 2,
+    "feerate": 2.0,
+    "pay+change": true,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 221,
+    "tool_vsize": 221,
+    "tool_weight": 884,
+    "estimate_weight": 884,
+    "fee": 442,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 100,
+    "inputs": 2,
+    "feerate": 2.0,
+    "pay+change": true,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 5519,
+    "tool_vsize": 5519,
+    "tool_weight": 22073,
+    "estimate_weight": 22074,
+    "fee": 11038,
+    "paid_rate": 2.0,
+    "mined": true
+   },
+   {
+    "keys": 100,
+    "inputs": 36,
+    "feerate": 1.0,
+    "pay+change": false,
+    "accepted": true,
+    "reason": "",
+    "core_vsize": 97850,
+    "tool_vsize": 97850,
+    "tool_weight": 391399,
+    "estimate_weight": 391414,
+    "fee": 97854,
+    "paid_rate": 1.000041,
+    "mined": true
+   }
+  ],
+  "max_inputs_100_keys": 36,
+  "next_refused": true
+ },
+ "P3": {
+  "cases": [
+   {
+    "keys": 1,
+    "validateaddress_spk_match": true,
+    "decodescript_asm_match": true,
+    "checksum_match": true,
+    "private_checksum_match": true,
+    "derived_address_match": true
+   },
+   {
+    "keys": 2,
+    "validateaddress_spk_match": true,
+    "decodescript_address_match": true,
+    "checksum_match": true,
+    "private_checksum_match": true,
+    "derived_address_match": true
+   },
+   {
+    "keys": 3,
+    "validateaddress_spk_match": true,
+    "decodescript_address_match": true,
+    "checksum_match": true,
+    "private_checksum_match": true,
+    "derived_address_match": true
+   },
+   {
+    "keys": 15,
+    "validateaddress_spk_match": true,
+    "decodescript_address_match": true,
+    "checksum_match": true,
+    "private_checksum_match": true,
+    "derived_address_match": true
+   },
+   {
+    "keys": 16,
+    "validateaddress_spk_match": true,
+    "decodescript_address_match": true,
+    "checksum_match": true,
+    "private_checksum_match": true,
+    "derived_address_match": true
+   },
+   {
+    "keys": 20,
+    "validateaddress_spk_match": true,
+    "decodescript_address_match": true,
+    "checksum_match": true,
+    "private_checksum_match": true,
+    "derived_address_match": true
+   },
+   {
+    "keys": 100,
+    "validateaddress_spk_match": true,
+    "decodescript_address_match": true,
+    "checksum_match": true,
+    "private_checksum_match": true,
+    "derived_address_match": true
+   },
+   {
+    "keys": 101,
+    "validateaddress_spk_match": true,
+    "decodescript_address_match": true,
+    "core_refuses_descriptor_above_100": true,
+    "core_refusal": "))))))))))))))))))))))))))))) is not sane: needs witnesses that may exceed resource limits"
+   },
+   {
+    "keys": 201,
+    "validateaddress_spk_match": true,
+    "decodescript_address_match": true,
+    "core_refuses_descriptor_above_100": true,
+    "core_refusal": "getdescriptorinfo: A function is needed within P2WSH"
+   }
+  ],
+  "core_wallet_spend": {
+   "import": true,
+   "mined": true,
+   "txid": "6922d3efaaad4096bbc80ce1cb562001a7b774baea3121db42319f068be18499"
+  }
+ },
+ "P5_addresses": {
+  "checked": 3000,
+  "agree": 3000,
+  "disagree": 0,
+  "examples": []
+ },
+ "failures": [],
+ "core_version": "/Satoshi:31.1.0/"
+}
