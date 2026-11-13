@@ -1,0 +1,127 @@
+{
+ "expected": {
+  "F1": "fixed",
+  "F3": "fixed",
+  "F4": "open",
+  "F5": "fixed",
+  "F6": "open",
+  "F7": "fixed",
+  "F8": "open",
+  "F9": "fixed"
+ },
+ "observed_status": {
+  "F1": "fixed",
+  "F3": "fixed",
+  "F4": "open",
+  "F5": "fixed",
+  "F6": "open",
+  "F7": "fixed",
+  "F8": "open",
+  "F9": "fixed"
+ },
+ "details": {
+  "F1": {
+   "-1": {
+    "refused": true,
+    "message": "the fee rate must be at least 0.1 sat/vB, Bitcoin Core's relay minimum; got -1",
+    "crash": null
+   },
+   "0": {
+    "refused": true,
+    "message": "the fee rate must be at least 0.1 sat/vB, Bitcoin Core's relay minimum; got 0",
+    "crash": null
+   },
+   "0.05": {
+    "refused": true,
+    "message": "the fee rate must be at least 0.1 sat/vB, Bitcoin Core's relay minimum; got 0.05",
+    "crash": null
+   }
+  },
+  "F3": {
+   "--amount -5": {
+    "refused": true,
+    "message": "a -5 sat payment is under the 294 sat dust limit",
+    "crash": null
+   },
+   "--feerate inf": {
+    "refused": true,
+    "message": "the fee rate must be at least 0.1 sat/vB, Bitcoin Core's relay minimum; got inf",
+    "crash": null
+   },
+   "--utxo with vout -1": {
+    "refused": true,
+    "message": "eternax-vault unlock: error: argument --utxo: expected TXID:VOUT or TXID:VOUT:SATS, got 'ee30cbd72e9",
+    "crash": null
+   },
+   "--deposit -1": {
+    "refused": true,
+    "message": "eternax-vault unlock: error: argument --deposit: expected a deposit index from 0 to 2147483647, got ",
+    "crash": null
+   }
+  },
+  "F4": {
+   "unlock_exit": 0,
+   "late_deposit_txid": "ddd1f5b254e96ebfa4153675a537d30eb7f00b6923714fdf0a79e878044c06c7",
+   "left_at_spent_vault_sats": 2000000,
+   "outputs_left": 1
+  },
+  "F5": {
+   "keys": 201,
+   "largest_built": {
+    "inputs": 184,
+    "weight": 3988070
+   },
+   "one_more": {
+    "inputs": 185,
+    "refused": true,
+    "message": "185 outputs make a 4010041 WU transaction, over the 4000000 WU consensus limit on a block; no transa"
+   }
+  },
+  "F6": {
+   "keys50_equal_first50_of_keys100": true,
+   "regtest_keys_equal_signet_keys": true
+  },
+  "F7": {
+   "5000 sat/vB": {
+    "refused": true,
+    "message": "the fee would be 13795000 sat (0.13795 BTC), over the 10000000 sat ceiling; check the fee rate, or r"
+   },
+   "20000 sat/vB": {
+    "refused": true,
+    "message": "the fee would be 55180000 sat (0.5518 BTC), over the 10000000 sat ceiling; check the fee rate, or ra"
+   },
+   "5000 sat/vB with --max-fee 1 BTC": {
+    "signed": true,
+    "core_allowed": true,
+    "fee_sats": 13795000
+   }
+  },
+  "F8": {
+   "P2SH-P2WSH of the vault's own script": {
+    "address": "2NDNcZNvkpPx2ocA69dpJVbPX4UkHq6du7x",
+    "tool": "accepted",
+    "core_validateaddress": true
+   },
+   "P2WPKH of one of the vault's keys": {
+    "address": "bcrt1qlmpj5fxr3unacnu9u4n2v75879zh37gp9e4cw5",
+    "tool": "accepted",
+    "core_validateaddress": true
+   },
+   "witness v1 with a 20-byte program (anyone can spend)": {
+    "address": "bcrt1pqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqn5md8r",
+    "tool": "accepted",
+    "core_validateaddress": true
+   }
+  },
+  "F9": {
+   "amount 1,000 sat above the node's": {
+    "refused": true,
+    "message": "b8381d51febd0be9334787c67bdfe95b64447bacd8c848c9e5c20f6d4a9f5c1c:1 holds 1000000 sat, not 1001000"
+   },
+   "an outpoint the node does not show": {
+    "refused": true,
+    "message": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:0 is not a confirmed output at bcrt"
+   }
+  }
+ }
+}
