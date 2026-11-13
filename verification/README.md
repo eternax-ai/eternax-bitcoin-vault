@@ -2,6 +2,8 @@
 
 These scripts check six properties of the vault (P1–P6) and the status of each known finding, on the
 checkout they sit in. One command runs everything and exits non-zero on any failure.
+[SPEC.md](SPEC.md) defines the properties and their assumptions; [REPORT.md](REPORT.md) gives the
+results on one commit, with the findings.
 
 | Script | Checks |
 | --- | --- |
