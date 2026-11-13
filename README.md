@@ -65,6 +65,10 @@ Bitcoin Core's own wallet, given the same descriptor, derives the same address a
 
 **Mainnet:** a 100-key vault [funded](https://mempool.space/tx/b77b3538628e78d7902ffaa4bb90106b3b9b342440e037b05d610993780d1085) and [unlocked](https://mempool.space/tx/397b3672fd908901906802fc02ab3307d43264ca72776329340a2173dc84220c) with 100 signatures in one standard transaction: 2,759 vB, a 2,759-sat fee, mined in block 973,546 by MARA Pool. Details in [RESULTS.md](RESULTS.md#mainnet).
 
+## Six properties are checked against Bitcoin Core
+
+[verification/](verification/) proves or checks six properties with Z3, independent re-implementations of the BIPs, and Bitcoin Core v31.1 as the reference: only all n signatures spend the vault, unlocks are valid and standard, the address commits to the script, the seed rebuilds every key, signatures bind the transaction, and an unlock never pays the vault it spends. The [report](verification/REPORT.md) gives the results and the three open findings, all low; the [spec](verification/SPEC.md) states each property and its assumptions. One command re-runs everything. No third party has reviewed it yet.
+
 ## Quickstart
 
 ```bash
